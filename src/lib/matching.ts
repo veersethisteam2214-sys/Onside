@@ -38,7 +38,8 @@ function scoreCoach(coach: Coach, req: SessionRequest): Match | null {
   const availability = blocksToday.includes(req.block) ? 1 : blocksToday.length ? 0.35 : 0
   const distance = km(coach.suburb, req.suburb)
   const proximity = Math.max(0, 1 - distance / 25)
-  const rating = Math.min(1, Math.max(0, (coach.rating - 3.5) / 1.5))
+  // unreviewed coaches get a neutral score rather than a perfect 5.0
+  const rating = coach.reviewCount ? Math.min(1, Math.max(0, (coach.rating - 3.5) / 1.5)) : 0.5
   const sessionPrice = listPrice(coach.hourlyRate, req.date, req.block)
   const price =
     sessionPrice <= req.budget ? 1 : Math.max(0, 1 - (sessionPrice - req.budget) / req.budget)
@@ -67,8 +68,8 @@ function scoreCoach(coach: Coach, req: SessionRequest): Match | null {
   }
 }
 
-export function findMatches(req: SessionRequest): Match[] {
-  return COACHES.map((c) => scoreCoach(c, req))
+export function findMatches(req: SessionRequest, coaches: Coach[] = COACHES): Match[] {
+  return coaches.map((c) => scoreCoach(c, req))
     .filter((m): m is Match => m !== null)
     .sort((a, b) => b.score - a.score)
 }

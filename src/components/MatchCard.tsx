@@ -1,14 +1,37 @@
 import { motion } from 'motion/react'
-import { MapPin, Zap } from 'lucide-react'
+import { BadgeCheck, CalendarCheck2, MapPin, Target } from 'lucide-react'
 import type { Match } from '../types'
-import { Avatar, Stars } from './ui'
+import { Avatar, Button, Stars } from './core'
 import { money } from '../lib/dates'
-import { sportById } from '../data/sports'
+import { cn } from '@/lib/utils'
 
-/**
- * Coach match card — a liquid-glass take on the 21st.dev profile card: frosted panel,
- * live status dot, and a glowing tab underneath carrying the reason line.
- */
+/** Circular match-score ring. */
+function ScoreRing({ score, strong }: { score: number; strong: boolean }) {
+  const r = 17
+  const c = 2 * Math.PI * r
+  return (
+    <div className="relative h-11 w-11 shrink-0">
+      <svg viewBox="0 0 44 44" className="h-11 w-11 -rotate-90">
+        <circle cx="22" cy="22" r={r} fill="none" stroke="#eef2f7" strokeWidth="4" />
+        <motion.circle
+          cx="22"
+          cy="22"
+          r={r}
+          fill="none"
+          stroke={strong ? '#0a66ff' : '#94a3b8'}
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          initial={{ strokeDashoffset: c }}
+          animate={{ strokeDashoffset: c * (1 - score / 100) }}
+          transition={{ duration: 0.9, ease: [0.2, 0.8, 0.2, 1], delay: 0.15 }}
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-[11.5px] font-semibold">{score}</span>
+    </div>
+  )
+}
+
 export default function MatchCard({
   match,
   rank,
@@ -20,81 +43,65 @@ export default function MatchCard({
   onOpen: () => void
   onBook: () => void
 }) {
-  const { coach, score, reasons, sessionPrice } = match
-  const available = match.breakdown.availability === 1
+  const { coach, score, sessionPrice, breakdown, km } = match
   const top = rank === 0
+  const tags = [
+    breakdown.skill === 1 && { icon: Target, text: 'Coaches this skill' },
+    breakdown.availability === 1 && { icon: CalendarCheck2, text: 'Free at your time' },
+    { icon: MapPin, text: `${km < 1 ? '<1' : km.toFixed(1)} km away` },
+  ].filter(Boolean) as { icon: typeof Target; text: string }[]
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.05 + rank * 0.08, duration: 0.4, ease: 'easeOut' }}
-      className="relative"
+      transition={{ delay: 0.04 + rank * 0.07, duration: 0.4, ease: [0.2, 0.8, 0.2, 1] }}
+      className={cn('card card-hover relative p-4', top && 'ring-2 ring-accent/80 border-transparent')}
     >
-      {/* glowing tab behind the card */}
-      <div
-        className={`absolute inset-x-3 bottom-0 top-10 rounded-[1.9rem] ${
-          top
-            ? 'bg-gradient-to-b from-[#8cc2ff] to-[#2f7bff] shadow-[0_20px_44px_-12px_rgba(47,123,255,0.85)]'
-            : 'glass glass-soft'
-        }`}
-      />
+      {top && (
+        <span className="absolute -top-2.5 left-4 rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-semibold text-white shadow-[0_6px_14px_-6px_rgba(10,102,255,0.8)]">
+          Best match
+        </span>
+      )}
 
-      <div className="relative">
-        <div className={`glass rounded-[1.9rem] p-4 ${top ? 'ring-1 ring-accent/40' : ''}`}>
-          <div className="flex items-center justify-between text-[11.5px]">
-            <span className="inline-flex items-center gap-1.5 text-ink/75">
-              <span className="relative flex h-2 w-2">
-                {available && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />}
-                <span className={`relative inline-flex h-2 w-2 rounded-full ${available ? 'bg-emerald-400' : 'bg-amber-300'}`} />
-              </span>
-              {available ? 'Available at your time' : 'Available that day'}
-            </span>
-            <span
-              className={`rounded-full px-2.5 py-0.5 font-bold ${
-                top ? 'btn-liquid text-white' : 'bg-ink/[0.06] text-ink ring-1 ring-ink/10'
-              }`}
-            >
-              <span className="relative z-10">{score}% match</span>
-            </span>
+      <button onClick={onOpen} className="flex w-full items-center gap-3 text-left">
+        <Avatar initials={coach.initials} hue={coach.hue} size={48} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-[16px] font-semibold tracking-tight">{coach.name}</span>
+            <BadgeCheck size={16} className="shrink-0 text-accent" />
           </div>
-
-          <button onClick={onOpen} className="mt-3.5 flex w-full items-center gap-3 text-left">
-            <Avatar initials={coach.initials} hue={coach.hue} size={48} />
-            <div className="min-w-0">
-              <div className="font-semibold text-[16.5px] tracking-tight truncate">{coach.name}</div>
-              <div className="mt-0.5 flex items-center gap-1.5 text-[12px] text-ink/65">
-                <Stars rating={coach.rating} size={12} />
-                <span>· {coach.reviewCount} reviews</span>
-                <span>· {sportById(coach.sport).name}</span>
-              </div>
-            </div>
-            <div className="ml-auto text-right">
-              <div className="text-[19px] font-bold tracking-tight">{money(sessionPrice)}</div>
-              <div className="text-[10.5px] text-ink/55">per session</div>
-            </div>
-          </button>
-
-          <div className="mt-4 flex gap-2">
-            <button onClick={onOpen} className="btn-glass flex-1 rounded-full py-2.5 text-[12.5px] font-semibold">
-              View profile
-            </button>
-            <button
-              onClick={onBook}
-              className="btn-liquid flex-1 rounded-full py-2.5 text-[12.5px] font-bold text-white"
-            >
-              Book
-            </button>
+          <div className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-slate-500">
+            <Stars rating={coach.rating} size={12} reviews={coach.reviewCount} />
+            {coach.reviewCount > 0 && <span>({coach.reviewCount})</span>}
+            <span className="text-slate-300">·</span>
+            <span>{coach.yearsCoaching} yrs</span>
           </div>
         </div>
+        <ScoreRing score={score} strong={top} />
+      </button>
 
-        <div className={`flex items-center gap-1.5 px-6 py-2.5 text-[11.5px] font-semibold ${top ? 'text-white' : 'text-ink/60'}`}>
-          <Zap size={13} className={top ? 'fill-white' : 'fill-ink/40'} />
-          <span className="truncate">{reasons.slice(0, 2).join(' · ')}</span>
-          <span className="ml-auto inline-flex shrink-0 items-center gap-1">
-            <MapPin size={12} />
-            {reasons[reasons.length - 1]}
+      <div className="mt-3.5 flex flex-wrap gap-1.5">
+        {tags.map(({ icon: I, text }) => (
+          <span key={text} className="inline-flex items-center gap-1 rounded-lg bg-slate-50 px-2 py-1 text-[11.5px] font-medium text-slate-600 ring-1 ring-slate-100">
+            <I size={12} className="text-slate-400" />
+            {text}
           </span>
+        ))}
+      </div>
+
+      <div className="mt-4 flex items-center gap-3 border-t border-slate-100 pt-3.5">
+        <div>
+          <div className="text-[18px] font-semibold tracking-tight">{money(sessionPrice)}</div>
+          <div className="text-[11px] text-slate-400">per session</div>
+        </div>
+        <div className="ml-auto flex gap-2">
+          <Button variant="secondary" size="sm" onClick={onOpen}>
+            Profile
+          </Button>
+          <Button size="sm" onClick={onBook}>
+            Book
+          </Button>
         </div>
       </div>
     </motion.div>

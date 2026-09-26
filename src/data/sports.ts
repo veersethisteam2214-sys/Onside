@@ -4,37 +4,31 @@ export const SPORTS: Sport[] = [
   {
     id: 'athletics',
     name: 'Athletics',
-    emoji: '🏃',
     skills: ['Long jump', 'Sprint starts', 'Hurdles', 'Shot put', 'Middle distance'],
   },
   {
     id: 'soccer',
     name: 'Soccer',
-    emoji: '⚽',
     skills: ['First touch', 'Finishing', '1v1 defending', 'Goalkeeping', 'Crossing'],
   },
   {
     id: 'tennis',
     name: 'Tennis',
-    emoji: '🎾',
     skills: ['Serve', 'Backhand', 'Footwork', 'Volleys', 'Match strategy'],
   },
   {
     id: 'padel',
     name: 'Padel',
-    emoji: '🏓',
     skills: ['Bandeja', 'Wall play', 'Serve & return', 'Volleys', 'Positioning'],
   },
   {
     id: 'boxing',
     name: 'Boxing',
-    emoji: '🥊',
     skills: ['Footwork', 'Combinations', 'Defence', 'Conditioning'],
   },
   {
     id: 'swimming',
     name: 'Swimming',
-    emoji: '🏊',
     skills: ['Freestyle technique', 'Starts & turns', 'Butterfly', 'Breaststroke', 'Endurance'],
   },
 ]

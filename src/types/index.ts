@@ -3,13 +3,12 @@ export type SportId = 'athletics' | 'soccer' | 'tennis' | 'padel' | 'boxing' | '
 export interface Sport {
   id: SportId
   name: string
-  emoji: string
   skills: string[]
 }
 
 export type Level = 'Beginner' | 'Intermediate' | 'Competitive' | 'Elite'
 
-/** Morning 6–10am, Afternoon 3–7pm, Evening 7–9pm */
+/** Morning 6–10am, After school 3–7pm, Evening 7–9pm */
 export type TimeBlock = 'morning' | 'afternoon' | 'evening'
 
 export interface Suburb {
@@ -53,6 +52,8 @@ export interface Coach {
   availability: Partial<Record<number, TimeBlock[]>>
   reviews: Review[]
   hue: number
+  /** set when the coach is a signed-up user rather than seed data */
+  userId?: string
 }
 
 export interface SessionRequest {
@@ -108,10 +109,67 @@ export interface PriceQuote {
 export interface Booking {
   id: string
   coachId: string
+  athleteId: string
+  athleteName: string
   request: SessionRequest
   packageType: PackageType
   tier: Tier
   quote: PriceQuote
   createdAt: string
   sessionsUsed: number
+  source: 'direct' | 'offer'
+}
+
+// ─── Accounts & the two-sided marketplace ─────────────────────────────────
+
+export type Role = 'athlete' | 'coach'
+
+export interface AthleteProfile {
+  sport: SportId
+  level: Level
+  suburb: string
+}
+
+export interface User {
+  id: string
+  name: string
+  email: string
+  passwordHash: string
+  createdAt: string
+  role?: Role
+  dob?: string // ISO yyyy-mm-dd
+  athlete?: AthleteProfile
+  /** for coaches: the Coach record they own */
+  coachId?: string
+}
+
+/** An athlete's public "looking for a coach" post that coaches can respond to. */
+export interface OpenRequest extends SessionRequest {
+  id: string
+  athleteId: string
+  athleteName: string
+  athleteAge?: number
+  note: string
+  createdAt: string
+  status: 'open' | 'matched'
+}
+
+export interface Offer {
+  id: string
+  requestId: string
+  coachId: string
+  athleteId: string
+  price: number
+  message: string
+  status: 'pending' | 'accepted' | 'declined'
+  createdAt: string
+}
+
+export interface DB {
+  version: 2
+  users: User[]
+  coaches: Coach[] // coaches created by sign-up (seed coaches live in data/coaches.ts)
+  requests: OpenRequest[]
+  offers: Offer[]
+  bookings: Booking[]
 }

@@ -1,7 +1,13 @@
 import { motion } from 'motion/react'
 import PhoneFrame from './components/PhoneFrame'
+import { Toast } from './components/core'
 import { StoreProvider, useStore, type Screen } from './state/store'
-import RolePicker from './screens/RolePicker'
+import Welcome from './screens/auth/Welcome'
+import SignIn from './screens/auth/SignIn'
+import SignUp from './screens/auth/SignUp'
+import RoleSelect from './screens/auth/RoleSelect'
+import ProfileSetup from './screens/auth/ProfileSetup'
+import AthleteHome from './screens/athlete/Home'
 import Request from './screens/athlete/Request'
 import Matches from './screens/athlete/Matches'
 import CoachProfile from './screens/athlete/CoachProfile'
@@ -9,12 +15,25 @@ import Book from './screens/athlete/Book'
 import Checkout from './screens/athlete/Checkout'
 import Confirmed from './screens/athlete/Confirmed'
 import Bookings from './screens/athlete/Bookings'
-import CoachHome from './screens/coach/CoachHome'
+import CoachDashboard from './screens/coach/Dashboard'
+import CoachRequests from './screens/coach/Requests'
+import CoachSchedule from './screens/coach/Schedule'
+import Account from './screens/Account'
 
 function render(s: Screen) {
   switch (s.name) {
-    case 'role':
-      return <RolePicker />
+    case 'welcome':
+      return <Welcome />
+    case 'signIn':
+      return <SignIn />
+    case 'signUp':
+      return <SignUp />
+    case 'roleSelect':
+      return <RoleSelect />
+    case 'profileSetup':
+      return <ProfileSetup />
+    case 'athleteHome':
+      return <AthleteHome />
     case 'request':
       return <Request />
     case 'matches':
@@ -29,8 +48,14 @@ function render(s: Screen) {
       return <Confirmed bookingId={s.bookingId} />
     case 'bookings':
       return <Bookings />
-    case 'coachHome':
-      return <CoachHome />
+    case 'coachDashboard':
+      return <CoachDashboard />
+    case 'coachRequests':
+      return <CoachRequests />
+    case 'coachSchedule':
+      return <CoachSchedule />
+    case 'account':
+      return <Account />
   }
 }
 
@@ -45,9 +70,9 @@ function Screens() {
   return (
     <motion.div
       key={keyOf(screen)}
-      initial={{ x: direction * 40 }}
-      animate={{ x: 0 }}
-      transition={{ duration: 0.26, ease: [0.2, 0.8, 0.2, 1] }}
+      initial={{ x: direction * 28, opacity: 0.4 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}
       className="absolute inset-0"
     >
       {render(screen)}
@@ -60,6 +85,7 @@ export default function App() {
     <StoreProvider>
       <PhoneFrame>
         <Screens />
+        <Toast />
       </PhoneFrame>
     </StoreProvider>
   )

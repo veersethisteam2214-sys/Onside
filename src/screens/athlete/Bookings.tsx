@@ -1,76 +1,148 @@
-import { CalendarDays, CalendarPlus } from 'lucide-react'
+import { CalendarPlus, Inbox, MapPin } from 'lucide-react'
+import { useState } from 'react'
 import { useStore } from '../../state/store'
-import { coachById } from '../../data/coaches'
-import { AthleteTabBar, Avatar } from '../../components/ui'
+import { Avatar, Badge, Button, EmptyState, PageTitle, Segmented, Stars } from '../../components/core'
+import { AthleteTabs } from '../../components/tabs'
 import { PACKAGES, TIERS } from '../../lib/pricing'
 import { blockById, fmtShort, money } from '../../lib/dates'
 
+type View = 'upcoming' | 'requests'
+
 export default function Bookings() {
-  const { bookings, reset } = useStore()
+  const { user, bookings, requests, offers, coachById, respondOffer, go, notify } = useStore()
+  const [view, setView] = useState<View>('upcoming')
+
+  const mine = bookings.filter((b) => b.athleteId === user?.id).sort((a, b) => a.request.date.localeCompare(b.request.date))
+  const myRequests = requests.filter((r) => r.athleteId === user?.id)
 
   return (
     <div className="relative h-full">
-      <div className="h-full overflow-y-auto px-5 pt-10 pb-[110px]">
-        <h1 className="text-[30px] font-bold tracking-[-0.03em]">My bookings</h1>
-        <p className="mt-1 text-[13.5px] text-ink/60">Upcoming sessions and package credit</p>
+      <div className="h-full overflow-y-auto px-5 pt-14 pb-[120px]">
+        <PageTitle title="Sessions" />
+        <div className="mt-5">
+          <Segmented
+            options={[
+              { id: 'upcoming', label: `Booked (${mine.length})` },
+              { id: 'requests', label: `My requests (${myRequests.length})` },
+            ]}
+            value={view}
+            onChange={setView}
+            layoutId="sessions-view"
+          />
+        </div>
 
-        {bookings.length === 0 ? (
-          <div className="mt-20 flex flex-col items-center px-6 text-center">
-            <div className="glass flex h-16 w-16 items-center justify-center rounded-full">
-              <CalendarPlus size={28} className="text-ink/70" />
-            </div>
-            <p className="mt-5 font-semibold">No sessions yet</p>
-            <p className="mt-1 text-[13px] text-ink/55">Find a coach for the one skill you want to fix.</p>
-            <button onClick={() => reset({ name: 'request' })} className="btn-liquid text-white mt-6 rounded-full px-6 py-3 text-[13.5px] font-semibold">
-              <span className="relative z-10">Find a coach</span>
-            </button>
-          </div>
-        ) : (
-          <div className="mt-6 space-y-3">
-            {bookings.map((b) => {
-              const c = coachById(b.coachId)
-              const left = b.quote.sessions - b.sessionsUsed
-              const pct = (left / b.quote.sessions) * 100
-              return (
-                <div key={b.id} className="glass rounded-[1.6rem] p-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar initials={c.initials} hue={c.hue} size={42} />
-                    <div className="min-w-0">
-                      <div className="text-[15px] font-semibold tracking-tight">{b.request.skill}</div>
-                      <div className="text-[12px] text-ink/55">with {c.name}</div>
+        <div className="mt-5 space-y-3">
+          {view === 'upcoming' &&
+            (mine.length === 0 ? (
+              <EmptyState
+                icon={<CalendarPlus size={22} />}
+                title="No sessions yet"
+                body="Find a coach for the one skill you want to fix."
+                action={
+                  <Button size="sm" onClick={() => go({ name: 'request' })}>
+                    Find a coach
+                  </Button>
+                }
+              />
+            ) : (
+              mine.map((b) => {
+                const c = coachById(b.coachId)
+                if (!c) return null
+                const left = b.quote.sessions - b.sessionsUsed
+                return (
+                  <div key={b.id} className="card card-hover p-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar initials={c.initials} hue={c.hue} size={42} />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[15px] font-semibold tracking-tight">{b.request.skill}</div>
+                        <div className="text-[12.5px] text-slate-500">with {c.name}</div>
+                      </div>
+                      <Badge tone="green">Confirmed</Badge>
                     </div>
-                    <span className="ml-auto rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-500/25">
-                      Confirmed
-                    </span>
-                  </div>
-                  <div className="mt-3.5 flex items-center gap-1.5 text-[12.5px] text-ink/75">
-                    <CalendarDays size={14} className="text-accent" />
-                    Next: {fmtShort(b.request.date)} · {blockById(b.request.block).hours}
-                  </div>
-                  <div className="mt-3.5">
-                    <div className="flex justify-between text-[11.5px] text-ink/55">
-                      <span>
-                        {PACKAGES[b.packageType].label} · {TIERS[b.tier].label}
-                      </span>
-                      <span className="font-semibold text-ink">
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-[12.5px] text-slate-600">
+                      <div className="rounded-xl bg-slate-50 px-3 py-2">
+                        <div className="text-[11px] text-slate-400">Next</div>
+                        {fmtShort(b.request.date)} · {blockById(b.request.block).hours}
+                      </div>
+                      <div className="rounded-xl bg-slate-50 px-3 py-2">
+                        <div className="text-[11px] text-slate-400">Package</div>
                         {left} of {b.quote.sessions} left
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between text-[11.5px] text-slate-400">
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin size={12} /> {c.venue}
+                      </span>
+                      <span>
+                        {b.source === 'offer' ? 'Coach offer' : `${PACKAGES[b.packageType].label} · ${TIERS[b.tier].label}`} · {money(b.quote.total)}
                       </span>
                     </div>
-                    <div className="mt-2 h-2 rounded-full bg-ink/10">
-                      <div
-                        className="h-2 rounded-full bg-gradient-to-r from-[#8cc2ff] to-[#2f7bff] shadow-[0_0_12px_rgba(47,123,255,0.7)]"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
                   </div>
-                  <div className="mt-3 text-[11.5px] text-ink/45">Paid {money(b.quote.total)} in-app</div>
-                </div>
-              )
-            })}
-          </div>
-        )}
+                )
+              })
+            ))}
+
+          {view === 'requests' &&
+            (myRequests.length === 0 ? (
+              <EmptyState
+                icon={<Inbox size={22} />}
+                title="No posted requests"
+                body="Post a request from the Matches screen and coaches can send you offers."
+              />
+            ) : (
+              myRequests.map((r) => {
+                const rOffers = offers.filter((o) => o.requestId === r.id)
+                return (
+                  <div key={r.id} className="card p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-[15px] font-semibold tracking-tight">{r.skill}</div>
+                        <div className="text-[12.5px] text-slate-500">
+                          {fmtShort(r.date)} · {blockById(r.block).label.toLowerCase()} · {r.suburb}
+                        </div>
+                      </div>
+                      <Badge tone={r.status === 'matched' ? 'green' : 'blue'}>{r.status === 'matched' ? 'Booked' : 'Open'}</Badge>
+                    </div>
+                    {rOffers.length === 0 ? (
+                      <p className="mt-3 text-[12.5px] text-slate-400">Waiting for coaches to respond…</p>
+                    ) : (
+                      <div className="mt-3 space-y-2">
+                        {rOffers.map((o) => {
+                          const c = coachById(o.coachId)
+                          if (!c) return null
+                          return (
+                            <div key={o.id} className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+                              <Avatar initials={c.initials} hue={c.hue} size={34} />
+                              <div className="min-w-0 flex-1">
+                                <div className="truncate text-[13.5px] font-semibold">{c.name}</div>
+                                <div className="text-[11.5px] text-slate-500">
+                                  <Stars rating={c.rating} size={10} reviews={c.reviewCount} /> · {money(o.price)}
+                                </div>
+                              </div>
+                              {o.status === 'pending' ? (
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    if (respondOffer(o.id, true)) notify(`Booked with ${c.name}`)
+                                  }}
+                                >
+                                  Accept
+                                </Button>
+                              ) : (
+                                <Badge tone={o.status === 'accepted' ? 'green' : 'neutral'}>{o.status === 'accepted' ? 'Accepted' : 'Declined'}</Badge>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            ))}
+        </div>
       </div>
-      <AthleteTabBar active="bookings" />
+      <AthleteTabs active="bookings" />
     </div>
   )
 }
