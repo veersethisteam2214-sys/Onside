@@ -1,9 +1,12 @@
-import { motion } from 'motion/react'
+import { motion, useAnimationFrame, useMotionValue, useMotionValueEvent } from 'motion/react'
 import { BadgeCheck, Quote, Star } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { Avatar, toneOf } from './core'
 import type { Review } from '../types'
 
 const CARD_W = 280 // card width + gap, px — must match the track's gap-x below
+const SPEED = 34 // px/sec of the auto-scroll
+const RESUME_DELAY = 900 // ms of stillness after a drag before auto-scroll picks back up
 
 /** Deterministic per-author tint so the same person always gets the same look across the loop. */
 function hueOf(name: string) {
@@ -46,12 +49,32 @@ function ReviewCard({ rv }: { rv: Review }) {
   )
 }
 
-/** Continuous, self-playing review strip — every review passes through without needing a manual swipe. */
+/**
+ * Self-playing review strip that hands control to the user on touch: drag it to move at your own
+ * pace or stop on one card, and it picks the auto-scroll back up a moment after you let go.
+ */
 export function ReviewMarquee({ reviews }: { reviews: Review[] }) {
-  if (reviews.length === 0) return null
-
   const loop = reviews.length < 4 ? [...reviews, ...reviews, ...reviews] : [...reviews, ...reviews]
-  const duration = reviews.length * 7
+  const setWidth = CARD_W * reviews.length
+
+  const x = useMotionValue(0)
+  const [dragging, setDragging] = useState(false)
+  const resumeAt = useRef(0)
+
+  // Seamless infinite wrap: whichever copy of the set scrolled off-screen, snap it back in range —
+  // works the same whether x moved from the auto-scroll or from the user's own drag.
+  useMotionValueEvent(x, 'change', (latest) => {
+    if (latest <= -setWidth) x.set(latest + setWidth)
+    else if (latest > 0) x.set(latest - setWidth)
+  })
+
+  useAnimationFrame((_, delta) => {
+    if (dragging || performance.now() < resumeAt.current) return
+    // Clamp the frame delta so a backgrounded/throttled tab can't produce one huge jump on return.
+    x.set(x.get() - (Math.min(delta, 50) / 1000) * SPEED)
+  })
+
+  if (reviews.length === 0) return null
 
   return (
     <div
@@ -62,9 +85,17 @@ export function ReviewMarquee({ reviews }: { reviews: Review[] }) {
       }}
     >
       <motion.div
-        className="flex w-max gap-3.5 px-5 py-1"
-        animate={{ x: [0, -(CARD_W * reviews.length)] }}
-        transition={{ duration, repeat: Infinity, ease: 'linear' }}
+        className="flex w-max cursor-grab select-none gap-3.5 px-5 py-1 active:cursor-grabbing"
+        style={{ x }}
+        drag="x"
+        dragConstraints={{ left: -Infinity, right: Infinity }}
+        dragElastic={0}
+        dragMomentum={false}
+        onDragStart={() => setDragging(true)}
+        onDragEnd={() => {
+          setDragging(false)
+          resumeAt.current = performance.now() + RESUME_DELAY
+        }}
       >
         {loop.map((rv, i) => (
           <ReviewCard key={`${rv.author}-${i}`} rv={rv} />
