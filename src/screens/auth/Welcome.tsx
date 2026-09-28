@@ -2,7 +2,7 @@ import { motion } from 'motion/react'
 import { CreditCard, ShieldCheck, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '../../state/store'
-import { Button, Logo, SportIcon } from '../../components/core'
+import { Button, Logo, SportBadge } from '../../components/core'
 import { SPORTS } from '../../data/sports'
 import { DEMO_ATHLETE_EMAIL, DEMO_COACH_EMAIL, DEMO_PASSWORD } from '../../lib/db'
 
@@ -53,9 +53,9 @@ export default function Welcome() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 + i * 0.05 }}
-            className="card flex aspect-square items-center justify-center text-slate-700 transition hover:-translate-y-0.5 hover:text-accent"
+            className="card flex aspect-square items-center justify-center transition hover:-translate-y-0.5"
           >
-            <SportIcon sport={s.id} size={22} weight="duotone" />
+            <SportBadge sport={s.id} size={34} />
           </motion.div>
         ))}
       </motion.div>

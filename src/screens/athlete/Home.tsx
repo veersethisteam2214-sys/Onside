@@ -2,7 +2,7 @@ import { ArrowRight, CalendarDays, ChevronRight, MapPin, Search } from 'lucide-r
 import { motion } from 'motion/react'
 import { useEffect } from 'react'
 import { useStore } from '../../state/store'
-import { Avatar, Button, Section, SportIcon, Stars } from '../../components/core'
+import { Avatar, Button, Section, SportBadge, Stars } from '../../components/core'
 import { AthleteTabs } from '../../components/tabs'
 import { SPORTS, sportById } from '../../data/sports'
 import { blockById, fmtShort, money } from '../../lib/dates'
@@ -144,9 +144,9 @@ export default function AthleteHome() {
                     setRequest({ sport: s.id, skill: s.skills[0] })
                     go({ name: 'request' })
                   }}
-                  className="card card-hover group flex flex-col items-center gap-2 py-4"
+                  className="card card-hover flex flex-col items-center gap-2 py-4"
                 >
-                  <SportIcon sport={s.id} size={26} weight="duotone" className="text-slate-600 transition group-hover:text-accent" />
+                  <SportBadge sport={s.id} size={38} />
                   <span className="text-[12.5px] font-medium text-slate-700">{s.name}</span>
                 </button>
               ))}

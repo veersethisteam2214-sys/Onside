@@ -1,7 +1,7 @@
 import { AlertCircle, Info, MapPin, ChevronDown } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useStore } from '../../state/store'
-import { BottomCTA, Chip, Field, PageTitle, Section, Segmented, SportIcon } from '../../components/core'
+import { BottomCTA, Chip, Field, PageTitle, Section, Segmented, SportBadge } from '../../components/core'
 import { DateWheelPicker } from '@/components/ui/date-wheel-picker'
 import { SPORTS, SUBURBS, sportById } from '../../data/sports'
 import { ageFrom, initialsOf } from '../../lib/db'
@@ -128,7 +128,7 @@ export default function ProfileSetup() {
             <div className="grid grid-cols-3 gap-2">
               {SPORTS.map((s) => (
                 <button key={s.id} onClick={() => pickSport(s.id)} data-on={s.id === sport} className="selectable flex flex-col items-center gap-1.5 rounded-2xl py-3">
-                  <SportIcon sport={s.id} size={24} weight={s.id === sport ? 'fill' : 'regular'} />
+                  <SportBadge sport={s.id} size={34} active={s.id === sport} />
                   <span className="text-[12px] font-medium">{s.name}</span>
                 </button>
               ))}

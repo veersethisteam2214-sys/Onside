@@ -1,14 +1,17 @@
 import { Megaphone, SearchX, ShieldCheck } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
 import { useMemo, useState } from 'react'
 import { useStore } from '../../state/store'
 import { findMatches } from '../../lib/matching'
 import MatchCard from '../../components/MatchCard'
+import MatchingScan from '../../components/MatchingScan'
 import { Button, EmptyState, Field, Sheet, TopBar } from '../../components/core'
 import { blockById, fmtShort } from '../../lib/dates'
 
 export default function Matches() {
   const { request: r, go, back, coaches, postRequest, notify } = useStore()
   const matches = useMemo(() => findMatches(r, coaches), [r, coaches])
+  const [scanning, setScanning] = useState(true)
   const [sheet, setSheet] = useState(false)
   const [note, setNote] = useState('')
   const [posted, setPosted] = useState(false)
@@ -24,7 +27,15 @@ export default function Matches() {
   return (
     <div className="relative h-full">
       <TopBar title="Matches" />
-      <div className="h-full overflow-y-auto px-4 pt-[76px] sm:pt-[108px] pb-10">
+
+      <AnimatePresence>{scanning && <MatchingScan sport={r.sport} coaches={matches.map((m) => m.coach)} onDone={() => setScanning(false)} />}</AnimatePresence>
+
+      <motion.div
+        className="h-full overflow-y-auto px-4 pt-[76px] sm:pt-[108px] pb-10"
+        initial={false}
+        animate={scanning ? { opacity: 0 } : { opacity: 1 }}
+        transition={{ duration: 0.35, delay: scanning ? 0 : 0.05 }}
+      >
         <div className="card px-4 py-3.5">
           <div className="text-[12px] font-medium text-slate-500">You asked for</div>
           <div className="mt-0.5 text-[16px] font-semibold tracking-tight">
@@ -88,7 +99,7 @@ export default function Matches() {
           <ShieldCheck size={15} className="mt-px shrink-0 text-emerald-600" />
           Only coaches with a verified Working With Children Check, first aid and accreditation appear in results.
         </div>
-      </div>
+      </motion.div>
 
       <Sheet open={sheet} onClose={() => setSheet(false)} title="Post your request">
         <p className="text-[13px] text-slate-500">

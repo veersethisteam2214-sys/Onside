@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react'
 import { ChevronLeft, ShieldCheck, Star, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
@@ -44,12 +44,27 @@ const TONES = [
   { bg: '#e8f4fb', fg: '#1a6a9e' },
 ]
 
+/** Tone lookup shared by Avatar and anything that wants a matching accent (e.g. a profile cover). */
+export function toneOf(hue: number) {
+  return TONES[Math.abs(Math.round(hue / 60)) % TONES.length]
+}
+
 /** Muted monogram avatar — tone chosen from the coach's hue so it stays stable. */
-export function Avatar({ initials, hue = 210, size = 44 }: { initials: string; hue?: number; size?: number }) {
-  const t = TONES[Math.abs(Math.round(hue / 60)) % TONES.length]
+export function Avatar({
+  initials,
+  hue = 210,
+  size = 44,
+  className,
+}: {
+  initials: string
+  hue?: number
+  size?: number
+  className?: string
+}) {
+  const t = toneOf(hue)
   return (
     <div
-      className="flex shrink-0 items-center justify-center rounded-full font-semibold"
+      className={cn('flex shrink-0 items-center justify-center rounded-full font-semibold', className)}
       style={{
         width: size,
         height: size,
@@ -74,19 +89,62 @@ const SPORT_ICON: Record<SportId, PhosphorIcon> = {
   swimming: PersonSimpleSwim,
 }
 
+/** One real, identifiable colour per sport — not a muted UI tone — so its badge reads instantly. */
+const SPORT_COLOR: Record<SportId, string> = {
+  athletics: '#e8590c',
+  soccer: '#1a9e5c',
+  tennis: '#a3b800',
+  padel: '#0a84e8',
+  boxing: '#dc2b3e',
+  swimming: '#0ba5b8',
+}
+
 export function SportIcon({
   sport,
   size = 22,
   weight = 'regular',
   className,
+  style,
 }: {
   sport: SportId
   size?: number
   weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone'
   className?: string
+  style?: CSSProperties
 }) {
   const I = SPORT_ICON[sport]
-  return <I size={size} weight={weight} className={className} />
+  return <I size={size} weight={weight} className={className} style={style} />
+}
+
+/**
+ * Solid-colour sport badge — a real icon weight on a brand-tinted ground, the way a sport app
+ * actually renders a discipline (Strava, Nike Training Club), rather than a flat grey glyph.
+ */
+export function SportBadge({
+  sport,
+  size = 40,
+  active = false,
+  className,
+}: {
+  sport: SportId
+  size?: number
+  active?: boolean
+  className?: string
+}) {
+  const color = SPORT_COLOR[sport]
+  return (
+    <span
+      className={cn('inline-flex shrink-0 items-center justify-center rounded-2xl transition-all duration-200', className)}
+      style={{
+        width: size,
+        height: size,
+        background: active ? `linear-gradient(160deg, ${color} 0%, ${color}cc 100%)` : `${color}17`,
+        boxShadow: active ? `inset 0 1px 0 rgb(255 255 255 / 0.25), 0 8px 16px -8px ${color}99` : `inset 0 0 0 1px ${color}22`,
+      }}
+    >
+      <SportIcon sport={sport} size={size * 0.52} weight={active ? 'fill' : 'bold'} className={active ? 'text-white' : ''} style={active ? undefined : { color }} />
+    </span>
+  )
 }
 
 // ─── Buttons ────────────────────────────────────────────────────────────

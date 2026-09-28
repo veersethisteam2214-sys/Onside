@@ -1,6 +1,7 @@
 import { CalendarDays, MapPin } from 'lucide-react'
 import { useStore } from '../../state/store'
 import { Avatar, Badge, EmptyState, PageTitle, Section } from '../../components/core'
+import { AnimatedMoney } from '../../components/AnimatedCounter'
 import { CoachTabs } from '../../components/tabs'
 import { PACKAGES } from '../../lib/pricing'
 import { blockById, fmtDay, money } from '../../lib/dates'
@@ -22,7 +23,9 @@ export default function CoachSchedule() {
         <div className="card mt-5 overflow-hidden">
           <div className="p-4">
             <div className="text-[12px] font-medium text-slate-500">Your earnings</div>
-            <div className="mt-1 text-[30px] font-semibold tracking-tight">{money(gross - fees)}</div>
+            <div className="mt-1 text-[30px] font-semibold tracking-tight">
+              <AnimatedMoney value={gross - fees} />
+            </div>
           </div>
           <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100 bg-slate-50/70 text-[12.5px]">
             <div className="px-4 py-3">

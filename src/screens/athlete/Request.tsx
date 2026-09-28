@@ -1,7 +1,7 @@
 import { MapPin, Sparkles, ChevronDown } from 'lucide-react'
 import { useStore } from '../../state/store'
 import { SPORTS, SUBURBS, sportById } from '../../data/sports'
-import { BottomCTA, Chip, PageTitle, Section, Segmented, SportIcon } from '../../components/core'
+import { BottomCTA, Chip, PageTitle, Section, Segmented, SportBadge } from '../../components/core'
 import { AthleteTabs } from '../../components/tabs'
 import { BLOCKS, nextDays, toISO, money } from '../../lib/dates'
 import { isPeak } from '../../lib/pricing'
@@ -39,7 +39,7 @@ export default function Request() {
                   data-on={s.id === r.sport}
                   className="selectable flex flex-col items-center gap-1.5 rounded-2xl py-3"
                 >
-                  <SportIcon sport={s.id} size={24} weight={s.id === r.sport ? 'fill' : 'regular'} />
+                  <SportBadge sport={s.id} size={34} active={s.id === r.sport} />
                   <span className="text-[12px] font-medium">{s.name}</span>
                 </button>
               ))}

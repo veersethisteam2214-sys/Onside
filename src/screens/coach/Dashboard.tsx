@@ -2,11 +2,12 @@ import { ArrowRight, BadgeCheck, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '../../state/store'
 import { Avatar, Button, EmptyState, Section, StatCard, Stars } from '../../components/core'
+import { AnimatedMoney } from '../../components/AnimatedCounter'
 import { CoachTabs } from '../../components/tabs'
 import RequestCard from './RequestCard'
 import OfferSheet from './OfferSheet'
 import { sportById } from '../../data/sports'
-import { blockById, fmtShort, money } from '../../lib/dates'
+import { blockById, fmtShort } from '../../lib/dates'
 import { initialsOf } from '../../lib/db'
 import type { OpenRequest } from '../../types'
 import { Inbox } from 'lucide-react'
@@ -44,7 +45,7 @@ export default function CoachDashboard() {
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-2.5">
-          <StatCard label="Earnings" value={money(earnings)} sub="after platform fee" />
+          <StatCard label="Earnings" value={<AnimatedMoney value={earnings} />} sub="after platform fee" />
           <StatCard label="Booked sessions" value={sessions.length} sub={sessions[0] ? `next ${fmtShort(sessions[0].request.date)}` : 'none yet'} />
           <StatCard label="New requests" value={fresh.length} sub={`${sportById(myCoach.sport).name.toLowerCase()} near you`} />
           <StatCard
