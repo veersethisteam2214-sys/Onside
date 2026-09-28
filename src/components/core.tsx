@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react'
+import { useState } from 'react'
 import { ChevronLeft, ShieldCheck, Star, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
@@ -49,33 +50,55 @@ export function toneOf(hue: number) {
   return TONES[Math.abs(Math.round(hue / 60)) % TONES.length]
 }
 
-/** Muted monogram avatar — tone chosen from the coach's hue so it stays stable. */
+/** Stable "person" index (1–70) so the same hue always resolves to the same stock headshot. */
+function photoIndexOf(hue: number) {
+  return (Math.abs(Math.round(hue)) % 70) + 1
+}
+
+/**
+ * Real headshot avatar — a deterministic stock portrait keyed off the same hue that used to
+ * pick a flat initials tone, so every coach/athlete gets a believable face instead of a
+ * monogram. Falls back to the initials tile if the photo fails to load.
+ */
 export function Avatar({
   initials,
   hue = 210,
   size = 44,
   className,
+  style,
 }: {
   initials: string
   hue?: number
   size?: number
   className?: string
+  style?: CSSProperties
 }) {
   const t = toneOf(hue)
+  const [broken, setBroken] = useState(false)
+  const px = Math.round(size * 2)
+
   return (
     <div
-      className={cn('flex shrink-0 items-center justify-center rounded-full font-semibold', className)}
-      style={{
-        width: size,
-        height: size,
-        fontSize: size * 0.36,
-        background: t.bg,
-        color: t.fg,
-        boxShadow: `inset 0 0 0 1px ${t.fg}1f`,
-        letterSpacing: '-0.02em',
-      }}
+      className={cn('relative shrink-0 overflow-hidden rounded-full', className)}
+      style={{ width: size, height: size, background: t.bg, boxShadow: `inset 0 0 0 1px ${t.fg}1f`, ...style }}
     >
-      {initials}
+      {!broken && (
+        <img
+          src={`https://i.pravatar.cc/${px}?img=${photoIndexOf(hue)}`}
+          alt=""
+          draggable={false}
+          onError={() => setBroken(true)}
+          className="h-full w-full object-cover"
+        />
+      )}
+      {broken && (
+        <span
+          className="absolute inset-0 flex items-center justify-center font-semibold"
+          style={{ fontSize: size * 0.36, color: t.fg, letterSpacing: '-0.02em' }}
+        >
+          {initials}
+        </span>
+      )}
     </div>
   )
 }
@@ -99,6 +122,20 @@ const SPORT_COLOR: Record<SportId, string> = {
   swimming: '#0ba5b8',
 }
 
+/** A real action shot per sport, curated on Unsplash — reads as a sport, not a clipart glyph. */
+const SPORT_PHOTO: Record<SportId, string> = {
+  athletics: '1461896836934-ffe607ba8211',
+  soccer: '1560272564-c83b66b1ad12',
+  tennis: '1714840961998-8d6c02ace00b',
+  padel: '1646649853703-7645147474ba',
+  boxing: '1549719386-74dfcbf7dbed',
+  swimming: '1530549387789-4c1017266635',
+}
+
+export function sportPhotoUrl(sport: SportId, px: number) {
+  return `https://images.unsplash.com/photo-${SPORT_PHOTO[sport]}?w=${px}&h=${px}&fit=crop&q=70&auto=format`
+}
+
 export function SportIcon({
   sport,
   size = 22,
@@ -117,8 +154,8 @@ export function SportIcon({
 }
 
 /**
- * Solid-colour sport badge — a real icon weight on a brand-tinted ground, the way a sport app
- * actually renders a discipline (Strava, Nike Training Club), rather than a flat grey glyph.
+ * Photo-real sport badge — an actual action shot per discipline, tinted with the sport's colour
+ * and lit up on selection, rather than a flat icon glyph on a tinted square.
  */
 export function SportBadge({
   sport,
@@ -134,15 +171,29 @@ export function SportBadge({
   const color = SPORT_COLOR[sport]
   return (
     <span
-      className={cn('inline-flex shrink-0 items-center justify-center rounded-2xl transition-all duration-200', className)}
+      className={cn('relative inline-flex shrink-0 overflow-hidden rounded-2xl transition-all duration-200', className)}
       style={{
         width: size,
         height: size,
-        background: active ? `linear-gradient(160deg, ${color} 0%, ${color}cc 100%)` : `${color}17`,
-        boxShadow: active ? `inset 0 1px 0 rgb(255 255 255 / 0.25), 0 8px 16px -8px ${color}99` : `inset 0 0 0 1px ${color}22`,
+        boxShadow: active ? `0 8px 18px -8px ${color}b3, inset 0 0 0 2px ${color}` : `inset 0 0 0 1px ${color}2e`,
       }}
     >
-      <SportIcon sport={sport} size={size * 0.52} weight={active ? 'fill' : 'bold'} className={active ? 'text-white' : ''} style={active ? undefined : { color }} />
+      <img
+        src={sportPhotoUrl(sport, Math.round(size * 2))}
+        alt=""
+        draggable={false}
+        className="h-full w-full object-cover"
+        style={{ filter: active ? 'saturate(1.15)' : 'saturate(0.55) brightness(0.92)' }}
+      />
+      <span className="absolute inset-0" style={{ background: active ? `linear-gradient(180deg, transparent 55%, ${color}55 100%)` : `${color}3d` }} />
+      {size >= 30 && (
+        <span
+          className="absolute flex items-center justify-center rounded-full"
+          style={{ width: size * 0.4, height: size * 0.4, right: size * 0.06, bottom: size * 0.06, background: 'rgba(10,10,15,0.42)', backdropFilter: 'blur(2px)' }}
+        >
+          <SportIcon sport={sport} size={size * 0.24} weight="fill" className="text-white" />
+        </span>
+      )}
     </span>
   )
 }

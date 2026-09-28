@@ -1,8 +1,8 @@
-import { ArrowRight, CalendarDays, ChevronRight, MapPin, Search } from 'lucide-react'
+import { ArrowRight, CalendarDays, ChevronRight, MapPin } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useEffect } from 'react'
 import { useStore } from '../../state/store'
-import { Avatar, Button, Section, SportBadge, Stars } from '../../components/core'
+import { Avatar, Button, Section, SportBadge, Stars, sportPhotoUrl } from '../../components/core'
 import { AthleteTabs } from '../../components/tabs'
 import { SPORTS, sportById } from '../../data/sports'
 import { blockById, fmtShort, money } from '../../lib/dates'
@@ -55,17 +55,33 @@ export default function AthleteHome() {
         </div>
 
         {/* search entry */}
-        <button onClick={() => go({ name: 'request' })} className="card card-hover mt-5 flex w-full items-center gap-3 p-4 text-left">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent text-white shadow-[0_8px_18px_-8px_rgba(10,102,255,0.8)]">
-            <Search size={20} />
-          </span>
-          <span className="flex-1">
-            <span className="block text-[15px] font-semibold tracking-tight">Find a coach</span>
-            <span className="block text-[12.5px] text-slate-500">
-              {sportById(request.sport).name} · {request.skill} · near {request.suburb}
+        <button onClick={() => go({ name: 'request' })} className="card card-hover relative mt-5 w-full overflow-hidden p-4 text-left">
+          <img
+            src={sportPhotoUrl(request.sport, 300)}
+            alt=""
+            draggable={false}
+            className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full object-cover opacity-[0.13]"
+          />
+          <div className="relative flex items-center gap-3">
+            {featured.length > 0 ? (
+              <div className="flex shrink-0 -space-x-3">
+                {featured.slice(0, 3).map((c, i) => (
+                  <Avatar key={c.id} initials={c.initials} hue={c.hue} size={42} className="ring-2 ring-white" style={{ zIndex: 3 - i }} />
+                ))}
+              </div>
+            ) : (
+              <SportBadge sport={request.sport} size={44} active />
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold tracking-tight">Find a coach</span>
+              <span className="block truncate text-[12.5px] text-slate-500">
+                {sportById(request.sport).name} · {request.skill} · near {request.suburb}
+              </span>
             </span>
-          </span>
-          <ArrowRight size={18} className="text-slate-400" />
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white shadow-[0_8px_16px_-8px_rgba(11,18,32,0.6)] transition group-hover:bg-accent">
+              <ArrowRight size={16} />
+            </span>
+          </div>
         </button>
 
         <div className="mt-7 space-y-7">

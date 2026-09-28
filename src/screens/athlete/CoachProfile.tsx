@@ -1,7 +1,7 @@
-import { BadgeCheck, MapPin, Quote } from 'lucide-react'
+import { BadgeCheck, MapPin, Quote, Star } from 'lucide-react'
 import { useStore } from '../../state/store'
 import { sportById } from '../../data/sports'
-import { Avatar, BottomCTA, Section, SportIcon, Stars, TopBar, VerifiedBadges, toneOf } from '../../components/core'
+import { Avatar, BottomCTA, Section, SportIcon, Stars, TopBar, VerifiedBadges, sportPhotoUrl } from '../../components/core'
 import { BLOCKS, money } from '../../lib/dates'
 import { listPrice } from '../../lib/pricing'
 import { cn } from '@/lib/utils'
@@ -15,23 +15,15 @@ export default function CoachProfile({ coachId }: { coachId: string }) {
   if (!c) return null
   const price = listPrice(c.hourlyRate, r.date, r.block)
   const sport = sportById(c.sport)
-  const tone = toneOf(c.hue)
 
   return (
     <div className="relative h-full">
       <TopBar />
       <div className="h-full overflow-y-auto px-5 pt-[76px] sm:pt-[108px] pb-[120px]">
         <div className="card overflow-hidden">
-          <div
-            className="relative h-24 overflow-hidden"
-            style={{ background: `linear-gradient(160deg, ${tone.bg} 0%, #ffffff 115%)` }}
-          >
-            <SportIcon
-              sport={c.sport}
-              size={96}
-              weight="duotone"
-              className="pointer-events-none absolute -right-4 -top-5 opacity-[0.14]"
-            />
+          <div className="relative h-32 overflow-hidden">
+            <img src={sportPhotoUrl(c.sport, 640)} alt="" draggable={false} className="h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/25 to-black/15" />
           </div>
 
           <div className="relative px-5 pb-5 pt-[38px] text-center">
@@ -131,23 +123,42 @@ export default function CoachProfile({ coachId }: { coachId: string }) {
             </div>
           </Section>
 
-          <Section label="Reviews">
+          <Section
+            label="Reviews"
+            action={
+              c.reviewCount > 0 && (
+                <span className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-ink">
+                  <Star size={13} className="fill-amber-400 text-amber-400" /> {c.rating.toFixed(1)}
+                  <span className="font-normal text-slate-400">({c.reviewCount})</span>
+                </span>
+              )
+            }
+          >
             {c.reviews.length === 0 ? (
               <p className="text-[13px] text-slate-400">No reviews yet.</p>
             ) : (
-              <div className="space-y-2.5">
-                {c.reviews.map((rv) => (
-                  <div key={rv.author} className="card p-4">
-                    <Quote size={15} className="text-slate-300" />
-                    <p className="mt-1.5 text-[13.5px] leading-relaxed text-slate-700">{rv.text}</p>
-                    <div className="mt-2 flex items-center justify-between text-[11.5px] text-slate-400">
-                      <span>
-                        {rv.author} · {rv.when}
-                      </span>
-                      <span className="text-amber-500">{'★'.repeat(rv.rating)}</span>
+              <div className="-mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-1">
+                {c.reviews.map((rv) => {
+                  const hue = rv.author.length * 41
+                  return (
+                    <div key={rv.author} className="card relative w-[260px] shrink-0 snap-start p-4">
+                      <Quote size={26} className="absolute right-3.5 top-3.5 text-slate-100" />
+                      <div className="flex items-center gap-2.5">
+                        <Avatar initials={rv.author.slice(0, 2).toUpperCase()} hue={hue} size={34} />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[13px] font-semibold text-ink">{rv.author}</div>
+                          <div className="text-[11px] text-slate-400">{rv.when}</div>
+                        </div>
+                      </div>
+                      <div className="mt-2.5 flex gap-0.5 text-amber-400">
+                        {Array.from({ length: rv.rating }).map((_, i) => (
+                          <Star key={i} size={12} className="fill-amber-400" />
+                        ))}
+                      </div>
+                      <p className="relative mt-2 text-[13.5px] leading-relaxed text-slate-700">{rv.text}</p>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </Section>
