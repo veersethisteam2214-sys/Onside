@@ -1,7 +1,8 @@
-import { BadgeCheck, MapPin, Quote, Star } from 'lucide-react'
+import { BadgeCheck, MapPin, Star } from 'lucide-react'
 import { useStore } from '../../state/store'
 import { sportById } from '../../data/sports'
 import { Avatar, BottomCTA, Section, SportIcon, Stars, TopBar, VerifiedBadges, sportPhotoUrl } from '../../components/core'
+import { ReviewMarquee } from '../../components/ReviewMarquee'
 import { BLOCKS, money } from '../../lib/dates'
 import { listPrice } from '../../lib/pricing'
 import { cn } from '@/lib/utils'
@@ -134,33 +135,7 @@ export default function CoachProfile({ coachId }: { coachId: string }) {
               )
             }
           >
-            {c.reviews.length === 0 ? (
-              <p className="text-[13px] text-slate-400">No reviews yet.</p>
-            ) : (
-              <div className="-mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-1">
-                {c.reviews.map((rv) => {
-                  const hue = rv.author.length * 41
-                  return (
-                    <div key={rv.author} className="card relative w-[260px] shrink-0 snap-start p-4">
-                      <Quote size={26} className="absolute right-3.5 top-3.5 text-slate-100" />
-                      <div className="flex items-center gap-2.5">
-                        <Avatar initials={rv.author.slice(0, 2).toUpperCase()} hue={hue} size={34} />
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-[13px] font-semibold text-ink">{rv.author}</div>
-                          <div className="text-[11px] text-slate-400">{rv.when}</div>
-                        </div>
-                      </div>
-                      <div className="mt-2.5 flex gap-0.5 text-amber-400">
-                        {Array.from({ length: rv.rating }).map((_, i) => (
-                          <Star key={i} size={12} className="fill-amber-400" />
-                        ))}
-                      </div>
-                      <p className="relative mt-2 text-[13.5px] leading-relaxed text-slate-700">{rv.text}</p>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+            {c.reviews.length === 0 ? <p className="text-[13px] text-slate-400">No reviews yet.</p> : <ReviewMarquee reviews={c.reviews} />}
           </Section>
         </div>
       </div>
