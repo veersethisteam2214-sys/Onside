@@ -4,7 +4,7 @@ import { sportById } from '../../data/sports'
 import { Avatar, BottomCTA, Section, SportIcon, Stars, TopBar, VerifiedBadges, sportPhotoUrl } from '../../components/core'
 import { ReviewMarquee } from '../../components/ReviewMarquee'
 import { BLOCKS, money } from '../../lib/dates'
-import { listPrice } from '../../lib/pricing'
+import { sessionPrice } from '../../lib/pricing'
 import { cn } from '@/lib/utils'
 
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -14,7 +14,7 @@ export default function CoachProfile({ coachId }: { coachId: string }) {
   const { request: r, go, coachById } = useStore()
   const c = coachById(coachId)
   if (!c) return null
-  const price = listPrice(c.hourlyRate, r.date, r.block)
+  const price = sessionPrice(r.segment, r.date, r.block)
   const sport = sportById(c.sport)
 
   return (
@@ -59,7 +59,7 @@ export default function CoachProfile({ coachId }: { coachId: string }) {
               {[
                 [String(c.sessionsRun), 'sessions'],
                 [`${c.yearsCoaching} yrs`, 'coaching'],
-                [money(c.hourlyRate), 'base rate'],
+                [`${c.reviewCount}`, 'reviews'],
               ].map(([v, l]) => (
                 <div key={l}>
                   <div className="text-[16px] font-semibold tracking-tight">{v}</div>
@@ -140,7 +140,7 @@ export default function CoachProfile({ coachId }: { coachId: string }) {
         </div>
       </div>
 
-      <BottomCTA onClick={() => go({ name: 'book', coachId: c.id })}>Book · from {money(price)} per session</BottomCTA>
+      <BottomCTA onClick={() => go({ name: 'book', coachId: c.id })}>Book · {money(price)} per session</BottomCTA>
     </div>
   )
 }

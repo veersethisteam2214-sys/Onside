@@ -10,16 +10,17 @@ import type { Booking } from '../../types'
 
 const TRUST = [
   { icon: ShieldCheck, text: 'Sessions booked in-app are insured and covered by our safety policy' },
-  { icon: RotateCcw, text: 'Free cancellation up to 24 hours before · unused package sessions refundable' },
-  { icon: Lock, text: 'Payments processed by Stripe — coaches are paid after each session' },
+  { icon: RotateCcw, text: 'Free cancellation up to 24 hours before the session' },
+  { icon: Lock, text: 'Payments processed by Stripe · coaches are paid automatically after each session' },
 ]
 
 export default function Checkout({ coachId }: { coachId: string }) {
-  const { request: r, draft, addBooking, reset, coachById, user } = useStore()
+  const { request: r, draft, addBooking, updateUser, reset, coachById, user, isFirstSession } = useStore()
   const c = coachById(coachId)
   const [paying, setPaying] = useState(false)
   if (!c || !user) return null
-  const q = quote(c.hourlyRate, r.date, r.block, draft.tier, draft.packageType)
+  const addPremium = draft.addPremium && !user.premium
+  const q = quote(r.segment, r.date, r.block, { firstSession: isFirstSession(user.id), addPremium })
 
   const pay = () => {
     setPaying(true)
@@ -29,16 +30,14 @@ export default function Checkout({ coachId }: { coachId: string }) {
       athleteId: user.id,
       athleteName: user.name,
       request: { ...r },
-      packageType: draft.packageType,
-      tier: draft.tier,
       quote: q,
       createdAt: new Date().toISOString(),
-      sessionsUsed: 0,
       source: 'direct',
     }
     // Simulated processing delay so the demo feels like a real payment.
     setTimeout(() => {
       addBooking(booking)
+      if (addPremium) updateUser({ premium: true })
       reset({ name: 'confirmed', bookingId: booking.id })
     }, 1100)
   }
@@ -48,7 +47,7 @@ export default function Checkout({ coachId }: { coachId: string }) {
       <TopBar title="Checkout" />
       <div className="h-full overflow-y-auto px-5 pt-[76px] sm:pt-[108px] pb-[130px]">
         <div className="space-y-7">
-          <Section label="First session">
+          <Section label="Session">
             <div className="card p-4 text-[13.5px]">
               <div className="font-semibold tracking-tight">
                 {r.skill} with {c.name}
@@ -61,7 +60,7 @@ export default function Checkout({ coachId }: { coachId: string }) {
           </Section>
 
           <Section label="Price breakdown">
-            <PriceBreakdown q={q} tier={draft.tier} pkg={draft.packageType} showPlatform />
+            <PriceBreakdown q={q} showPlatform />
           </Section>
 
           <Section label="Payment method">

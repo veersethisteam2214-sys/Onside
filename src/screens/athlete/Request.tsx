@@ -4,8 +4,8 @@ import { SPORTS, SUBURBS, sportById } from '../../data/sports'
 import { BottomCTA, Chip, PageTitle, Section, Segmented, SportBadge } from '../../components/core'
 import { AthleteTabs } from '../../components/tabs'
 import { BLOCKS, nextDays, toISO, money } from '../../lib/dates'
-import { isPeak } from '../../lib/pricing'
-import type { Level } from '../../types'
+import { SEGMENTS, sessionPrice, slotType } from '../../lib/pricing'
+import type { Level, Segment } from '../../types'
 import { cn } from '@/lib/utils'
 
 const LEVELS: { id: Level; label: string }[] = [
@@ -15,14 +15,10 @@ const LEVELS: { id: Level; label: string }[] = [
   { id: 'Elite', label: 'Elite' },
 ]
 
-const MIN = 40
-const MAX = 180
-
 export default function Request() {
   const { request: r, setRequest, go } = useStore()
   const sport = sportById(r.sport)
   const days = nextDays(10)
-  const fill = ((r.budget - MIN) / (MAX - MIN)) * 100
 
   return (
     <div className="relative h-full">
@@ -83,8 +79,15 @@ export default function Request() {
                   <button key={b.id} onClick={() => setRequest({ block: b.id })} data-on={on} className="selectable relative rounded-2xl px-2 py-2.5 text-center">
                     <div className="text-[12.5px] font-semibold">{b.label}</div>
                     <div className={cn('text-[11px]', on ? 'text-accent/80' : 'text-slate-400')}>{b.hours}</div>
-                    {isPeak(r.date, b.id) && (
-                      <span className="absolute -top-2 right-2 rounded-full bg-slate-900 px-1.5 py-px text-[9px] font-semibold tracking-wide text-white">PEAK</span>
+                    {r.segment === 'standard' && slotType(r.date, b.id) !== 'base' && (
+                      <span
+                        className={cn(
+                          'absolute -top-2 right-2 rounded-full px-1.5 py-px text-[9px] font-semibold tracking-wide',
+                          slotType(r.date, b.id) === 'peak' ? 'bg-slate-900 text-white' : 'bg-emerald-600 text-white',
+                        )}
+                      >
+                        {money(sessionPrice('standard', r.date, b.id))}
+                      </span>
                     )}
                   </button>
                 )
@@ -104,22 +107,19 @@ export default function Request() {
             </div>
           </Section>
 
-          <Section label="Budget per session" action={<span className="text-[15px] font-semibold">{money(r.budget)}</span>}>
-            <div className="card px-4 pt-4 pb-3">
-              <input
-                type="range"
-                min={MIN}
-                max={MAX}
-                step={5}
-                value={r.budget}
-                onChange={(e) => setRequest({ budget: Number(e.target.value) })}
-                className="range w-full"
-                style={{ ['--fill' as string]: `${fill}%` }}
-              />
-              <div className="mt-2 flex justify-between text-[11.5px] text-slate-400">
-                <span>${MIN}</span>
-                <span>${MAX}</span>
-              </div>
+          <Section label="Price" action={<span className="text-[12px] text-slate-400">Same for every coach</span>}>
+            <div className="grid grid-cols-2 gap-2">
+              {(Object.keys(SEGMENTS) as Segment[]).map((id) => (
+                <button key={id} onClick={() => setRequest({ segment: id })} data-on={r.segment === id} className="selectable flex flex-col rounded-2xl p-3 text-left">
+                  <span className="flex items-baseline justify-between">
+                    <span className="text-[13px] font-semibold">{id === 'concession' ? 'Student' : 'Standard'}</span>
+                    <span className="text-[15px] font-semibold">{money(SEGMENTS[id].price)}</span>
+                  </span>
+                  <span className="mt-0.5 text-[11.5px] leading-snug text-slate-500">
+                    {id === 'concession' ? 'School or uni · never surges' : '$51 off-peak to $72 peak'}
+                  </span>
+                </button>
+              ))}
             </div>
           </Section>
         </div>

@@ -41,7 +41,6 @@ export interface Coach {
   levels: Level[]
   suburb: string
   venue: string
-  hourlyRate: number
   rating: number
   reviewCount: number
   sessionsRun: number
@@ -63,7 +62,8 @@ export interface SessionRequest {
   date: string // ISO yyyy-mm-dd
   block: TimeBlock
   suburb: string
-  budget: number
+  /** price segment: decides what the athlete pays */
+  segment: Segment
 }
 
 export interface MatchBreakdown {
@@ -71,7 +71,6 @@ export interface MatchBreakdown {
   availability: number
   proximity: number
   rating: number
-  price: number
 }
 
 export interface Match {
@@ -83,27 +82,31 @@ export interface Match {
   sessionPrice: number
 }
 
-export type PackageType = 'single' | 'five' | 'ten'
+/** Third-degree price discrimination: verified school and university students pay the concession price. */
+export type Segment = 'concession' | 'standard'
 
-/**
- * Concession: verified concession card or school equity program (third-degree price discrimination).
- * Standard: default.
- * Performance: adds video analysis + a written progress plan (a product upgrade, not just a higher price).
- */
-export type Tier = 'concession' | 'standard' | 'performance'
+/** Dynamic pricing slot (standard sessions only move with it). */
+export type SlotType = 'peak' | 'base' | 'offpeak'
 
 export interface PriceQuote {
-  baseRate: number
-  peakMultiplier: number
-  isPeak: boolean
-  tierRate: number
-  packageDiscount: number
-  sessions: number
-  unitPrice: number
+  segment: Segment
+  slot: SlotType
+  /** A$40 concession or A$60 standard */
+  listPrice: number
+  /** after dynamic pricing (A$51 / A$60 / A$72 standard; concession stays A$40) */
+  sessionPrice: number
+  /** first-session offer: price brought down to A$20 */
+  introDiscount: number
+  /** what the athlete pays for the session */
+  sessionTotal: number
+  /** first month of Onside Premium, if added at checkout */
+  premiumFee: number
   total: number
-  saving: number
-  platformFee: number
+  /** A$35 flat plus any peak surge */
   coachPayout: number
+  peakBonus: number
+  /** Onside's margin on the session (negative when it funds the first-session offer) */
+  onsideMargin: number
 }
 
 export interface Booking {
@@ -112,11 +115,8 @@ export interface Booking {
   athleteId: string
   athleteName: string
   request: SessionRequest
-  packageType: PackageType
-  tier: Tier
   quote: PriceQuote
   createdAt: string
-  sessionsUsed: number
   source: 'direct' | 'offer'
 }
 
@@ -128,6 +128,8 @@ export interface AthleteProfile {
   sport: SportId
   level: Level
   suburb: string
+  /** verified school or university student: concession price */
+  student?: boolean
 }
 
 export interface User {
@@ -139,6 +141,8 @@ export interface User {
   role?: Role
   dob?: string // ISO yyyy-mm-dd
   athlete?: AthleteProfile
+  /** Onside Premium member */
+  premium?: boolean
   /** for coaches: the Coach record they own */
   coachId?: string
 }
@@ -159,6 +163,7 @@ export interface Offer {
   requestId: string
   coachId: string
   athleteId: string
+  /** what the athlete will pay for the session (set by Onside's pricing, not the coach) */
   price: number
   message: string
   status: 'pending' | 'accepted' | 'declined'
@@ -166,7 +171,7 @@ export interface Offer {
 }
 
 export interface DB {
-  version: 2
+  version: 3
   users: User[]
   coaches: Coach[] // coaches created by sign-up (seed coaches live in data/coaches.ts)
   requests: OpenRequest[]

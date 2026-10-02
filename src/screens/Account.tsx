@@ -6,6 +6,7 @@ import { AthleteTabs, CoachTabs } from '../components/tabs'
 import { sportById } from '../data/sports'
 import { ageFrom, initialsOf } from '../lib/db'
 import { money } from '../lib/dates'
+import { COACH_PAY, SEGMENTS } from '../lib/pricing'
 
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -51,7 +52,7 @@ export default function Account() {
           )}
           {isCoach && myCoach ? (
             <>
-              <Row label="Base rate" value={money(myCoach.hourlyRate)} />
+              <Row label="Pay per session" value={`${money(COACH_PAY)} + peak bonus`} />
               <Row label="Coaching area" value={myCoach.suburb} />
               <Row
                 label="Verification"
@@ -66,6 +67,8 @@ export default function Account() {
             <>
               <Row label="Level" value={user.athlete?.level ?? '—'} />
               <Row label="Home suburb" value={user.athlete?.suburb ?? '—'} />
+              <Row label="Price" value={user.athlete?.student ? `Student · ${money(SEGMENTS.concession.price)}` : `Standard · ${money(SEGMENTS.standard.price)}`} />
+              <Row label="Onside Premium" value={user.premium ? 'Member' : 'Not a member'} />
             </>
           )}
         </div>

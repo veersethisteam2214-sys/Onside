@@ -6,6 +6,7 @@ import { DateWheelPicker } from '@/components/ui/date-wheel-picker'
 import { SPORTS, SUBURBS, sportById } from '../../data/sports'
 import { ageFrom, initialsOf } from '../../lib/db'
 import { toISO, money } from '../../lib/dates'
+import { COACH_PAY, SEGMENTS } from '../../lib/pricing'
 import type { Coach, Level, SportId } from '../../types'
 
 const LEVELS: { id: Level; label: string }[] = [
@@ -36,7 +37,7 @@ export default function ProfileSetup() {
   const [level, setLevel] = useState<Level>('Intermediate')
   const [suburb, setSuburb] = useState('Burwood')
   const [skills, setSkills] = useState<string[]>([sportById('athletics').skills[0]])
-  const [rate, setRate] = useState(85)
+  const [student, setStudent] = useState(true)
   const [years, setYears] = useState(3)
   const [bio, setBio] = useState('')
 
@@ -67,7 +68,6 @@ export default function ProfileSetup() {
         levels: ['Beginner', 'Intermediate', 'Competitive'],
         suburb,
         venue: `${VENUE[sport]}, ${suburb}`,
-        hourlyRate: rate,
         rating: 5,
         reviewCount: 0,
         sessionsRun: 0,
@@ -83,12 +83,10 @@ export default function ProfileSetup() {
       updateUser({ dob: dobISO, coachId: coach.id })
       reset({ name: 'coachDashboard' })
     } else {
-      updateUser({ dob: dobISO, athlete: { sport, level, suburb } })
+      updateUser({ dob: dobISO, athlete: { sport, level, suburb, student } })
       reset({ name: 'athleteHome' })
     }
   }
-
-  const fill = ((rate - 40) / (180 - 40)) * 100
 
   return (
     <div className="relative h-full">
@@ -147,14 +145,12 @@ export default function ProfileSetup() {
                 </div>
               </Section>
 
-              <Section label="Base rate per session" action={<span className="text-[15px] font-semibold">{money(rate)}</span>}>
-                <div className="card px-4 pt-4 pb-3">
-                  <input type="range" min={40} max={180} step={5} value={rate} onChange={(e) => setRate(Number(e.target.value))} className="range w-full" style={{ ['--fill' as string]: `${fill}%` }} />
-                  <div className="mt-2 flex justify-between text-[11.5px] text-slate-400">
-                    <span>$40</span>
-                    <span>Typical $50–150</span>
-                    <span>$180</span>
+              <Section label="How you're paid">
+                <div className="card p-4 text-[13px] leading-relaxed text-slate-600">
+                  <div className="text-[22px] font-semibold tracking-tight text-ink">
+                    {money(COACH_PAY)} <span className="text-[13px] font-medium text-slate-500">per session</span>
                   </div>
+                  The same for student and standard sessions, plus a bonus at peak times. No marketing, no chasing payments: you’re paid automatically after each session.
                 </div>
               </Section>
 
@@ -173,9 +169,22 @@ export default function ProfileSetup() {
               </Field>
             </>
           ) : (
-            <Section label="Your level">
-              <Segmented options={LEVELS} value={level} onChange={setLevel} layoutId="setup-level" />
-            </Section>
+            <>
+              <Section label="Your level">
+                <Segmented options={LEVELS} value={level} onChange={setLevel} layoutId="setup-level" />
+              </Section>
+              <Section label="Are you a school or university student?">
+                <Segmented
+                  options={[
+                    { id: 'yes', label: `Yes · ${money(SEGMENTS.concession.price)} a session` },
+                    { id: 'no', label: `No · ${money(SEGMENTS.standard.price)}` },
+                  ]}
+                  value={student ? 'yes' : 'no'}
+                  onChange={(v) => setStudent(v === 'yes')}
+                  layoutId="setup-student"
+                />
+              </Section>
+            </>
           )}
 
           <Field label={isCoach ? 'Where you coach' : 'Where you train'}>

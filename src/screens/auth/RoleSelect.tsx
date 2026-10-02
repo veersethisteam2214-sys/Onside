@@ -13,7 +13,7 @@ const OPTIONS: { id: Role; title: string; body: string; icon: typeof PersonSimpl
     title: "I'm an athlete",
     body: 'Find a vetted coach for the one skill you want to improve.',
     icon: PersonSimpleRun,
-    points: ['Matched on skill, time & place', 'Book single sessions or packages'],
+    points: ['Matched on skill, time & place', 'Students pay $40 a session'],
   },
   {
     id: 'coach',

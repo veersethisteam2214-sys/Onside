@@ -2,7 +2,7 @@ import { Check, MapPin, CalendarDays } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useStore } from '../../state/store'
 import { Avatar, Button } from '../../components/core'
-import { PACKAGES } from '../../lib/pricing'
+import { SEGMENTS } from '../../lib/pricing'
 import { blockById, fmtDay, money } from '../../lib/dates'
 
 export default function Confirmed({ bookingId }: { bookingId: string }) {
@@ -54,8 +54,8 @@ export default function Confirmed({ bookingId }: { bookingId: string }) {
         </div>
         <div className="grid grid-cols-3 border-t border-dashed border-slate-200 p-5 text-center">
           {[
-            [String(b.quote.sessions), 'sessions'],
-            [money(b.quote.unitPrice), 'per session'],
+            [SEGMENTS[b.quote.segment].label, 'price'],
+            [money(b.quote.sessionTotal), 'session'],
             [money(b.quote.total), 'paid'],
           ].map(([v, l]) => (
             <div key={l}>
@@ -65,7 +65,7 @@ export default function Confirmed({ bookingId }: { bookingId: string }) {
           ))}
         </div>
         <div className="bg-slate-50 px-5 py-3 text-center text-[12px] text-slate-500">
-          {PACKAGES[b.packageType].label} · remaining sessions stay in your account
+          {b.quote.introDiscount > 0 ? 'First-session offer applied · ' : ''}Your coach is paid {money(b.quote.coachPayout)} after the session
         </div>
       </motion.div>
 

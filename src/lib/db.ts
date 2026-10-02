@@ -7,8 +7,8 @@ import { nextDays, toISO } from './dates'
  * to demo both sides of the marketplace (e.g. athlete in one tab, coach in another).
  */
 
-export const DB_KEY = 'onside.db.v2'
-export const SESSION_KEY = 'onside.session.v2'
+export const DB_KEY = 'onside.db.v3'
+export const SESSION_KEY = 'onside.session.v3'
 
 /** Both demo accounts use the password "demo1234". */
 export const DEMO_PASSWORD = 'demo1234'
@@ -49,7 +49,7 @@ function seed(): DB {
       createdAt: now,
       role: 'athlete',
       dob: '2007-05-12',
-      athlete: { sport: 'athletics', level: 'Competitive', suburb: 'Burwood' },
+      athlete: { sport: 'athletics', level: 'Competitive', suburb: 'Burwood', student: true },
     },
     {
       id: 'u-demo-coach',
@@ -71,16 +71,16 @@ function seed(): DB {
   })
 
   const requests: OpenRequest[] = [
-    req({ athleteId: 'u-seed-1', athleteName: 'Mia Patel', athleteAge: 15, sport: 'athletics', skill: 'Long jump', level: 'Intermediate', date: days[2], block: 'afternoon', suburb: 'Box Hill', budget: 90, note: 'Keep fouling my take-off at comps. Want to fix my run-up before regionals.' }, 1),
-    req({ athleteId: 'u-seed-2', athleteName: 'Josh Taylor', athleteAge: 17, sport: 'athletics', skill: 'Sprint starts', level: 'Competitive', date: days[4], block: 'morning', suburb: 'Camberwell', budget: 110, note: 'Slow out of the blocks — losing 0.1s in the first 10m.' }, 2),
-    req({ athleteId: 'u-seed-3', athleteName: 'Sienna Brooks', athleteAge: 20, sport: 'athletics', skill: 'Hurdles', level: 'Beginner', date: days[5], block: 'evening', suburb: 'Glen Waverley', budget: 70, note: 'New to hurdles, want to learn proper lead-leg technique.' }, 3),
-    req({ athleteId: 'u-seed-4', athleteName: 'Liam Nguyen', athleteAge: 19, sport: 'tennis', skill: 'Serve', level: 'Competitive', date: days[3], block: 'afternoon', suburb: 'Hawthorn', budget: 120, note: 'Second serve breaks down under pressure.' }, 4),
-    req({ athleteId: 'u-seed-5', athleteName: 'Zoe Martin', athleteAge: 16, sport: 'soccer', skill: 'Goalkeeping', level: 'Intermediate', date: days[1], block: 'afternoon', suburb: 'Doncaster', budget: 80, note: 'Club has no keeper coach. Need help with handling and positioning.' }, 5),
-    req({ athleteId: 'u-seed-6', athleteName: 'Kai Walker', athleteAge: 22, sport: 'boxing', skill: 'Defence', level: 'Beginner', date: days[6], block: 'evening', suburb: 'Brunswick', budget: 75, note: 'Getting hit too much in sparring, want to work on head movement.' }, 6),
-    req({ athleteId: 'u-seed-7', athleteName: 'Harry Collins', athleteAge: 14, sport: 'swimming', skill: 'Starts & turns', level: 'Competitive', date: days[2], block: 'morning', suburb: 'Carlton', budget: 100, note: 'Losing time on tumble turns at state meets.' }, 7),
+    req({ athleteId: 'u-seed-1', athleteName: 'Mia Patel', athleteAge: 15, sport: 'athletics', skill: 'Long jump', level: 'Intermediate', date: days[2], block: 'afternoon', suburb: 'Box Hill', segment: 'concession', note: 'Keep fouling my take-off at comps. Want to fix my run-up before regionals.' }, 1),
+    req({ athleteId: 'u-seed-2', athleteName: 'Josh Taylor', athleteAge: 17, sport: 'athletics', skill: 'Sprint starts', level: 'Competitive', date: days[4], block: 'morning', suburb: 'Camberwell', segment: 'concession', note: 'Slow out of the blocks — losing 0.1s in the first 10m.' }, 2),
+    req({ athleteId: 'u-seed-3', athleteName: 'Sienna Brooks', athleteAge: 20, sport: 'athletics', skill: 'Hurdles', level: 'Beginner', date: days[5], block: 'evening', suburb: 'Glen Waverley', segment: 'concession', note: 'New to hurdles, want to learn proper lead-leg technique.' }, 3),
+    req({ athleteId: 'u-seed-4', athleteName: 'Liam Nguyen', athleteAge: 19, sport: 'tennis', skill: 'Serve', level: 'Competitive', date: days[3], block: 'afternoon', suburb: 'Hawthorn', segment: 'standard', note: 'Second serve breaks down under pressure.' }, 4),
+    req({ athleteId: 'u-seed-5', athleteName: 'Zoe Martin', athleteAge: 16, sport: 'soccer', skill: 'Goalkeeping', level: 'Intermediate', date: days[1], block: 'afternoon', suburb: 'Doncaster', segment: 'concession', note: 'Club has no keeper coach. Need help with handling and positioning.' }, 5),
+    req({ athleteId: 'u-seed-6', athleteName: 'Kai Walker', athleteAge: 22, sport: 'boxing', skill: 'Defence', level: 'Beginner', date: days[6], block: 'evening', suburb: 'Brunswick', segment: 'standard', note: 'Getting hit too much in sparring, want to work on head movement.' }, 6),
+    req({ athleteId: 'u-seed-7', athleteName: 'Harry Collins', athleteAge: 14, sport: 'swimming', skill: 'Starts & turns', level: 'Competitive', date: days[2], block: 'morning', suburb: 'Carlton', segment: 'concession', note: 'Losing time on tumble turns at state meets.' }, 7),
   ]
 
-  return { version: 2, users, coaches: [], requests, offers: [], bookings: [] }
+  return { version: 3, users, coaches: [], requests, offers: [], bookings: [] }
 }
 
 export function loadDB(): DB {
@@ -88,7 +88,7 @@ export function loadDB(): DB {
     const raw = localStorage.getItem(DB_KEY)
     if (raw) {
       const db = JSON.parse(raw) as DB
-      if (db.version === 2) return db
+      if (db.version === 3) return db
     }
   } catch {
     /* fall through to a fresh seed */

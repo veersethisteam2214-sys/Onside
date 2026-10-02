@@ -5,6 +5,7 @@ import { Avatar, Badge, Button, SportIcon } from '../../components/core'
 import { blockById, fmtShort, money } from '../../lib/dates'
 import { initialsOf } from '../../lib/db'
 import { km } from '../../lib/matching'
+import { quote } from '../../lib/pricing'
 
 export default function RequestCard({
   r,
@@ -54,14 +55,14 @@ export default function RequestCard({
           <MapPin size={12} className="text-slate-400" /> {r.suburb} · {distance < 1 ? '<1' : distance.toFixed(1)} km
         </span>
         <span className="inline-flex items-center gap-1 rounded-lg bg-slate-50 px-2 py-1 ring-1 ring-slate-100">
-          <Wallet size={12} className="text-slate-400" /> up to {money(r.budget)}
+          <Wallet size={12} className="text-slate-400" /> {r.segment === 'concession' ? 'Student' : 'Standard'} · you earn {money(quote(r.segment, r.date, r.block).coachPayout)}
         </span>
       </div>
 
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3.5">
         {offer ? (
           <>
-            <span className="text-[12.5px] text-slate-500">You offered {money(offer.price)}</span>
+            <span className="text-[12.5px] text-slate-500">Offer sent · athlete pays {money(offer.price)}</span>
             <Badge tone={offer.status === 'accepted' ? 'green' : offer.status === 'declined' ? 'neutral' : 'blue'}>
               {offer.status === 'accepted' ? 'Accepted · booked' : offer.status === 'declined' ? 'Declined' : 'Offer sent'}
             </Badge>

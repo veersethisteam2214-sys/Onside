@@ -7,6 +7,7 @@ import { AthleteTabs } from '../../components/tabs'
 import { SPORTS, sportById } from '../../data/sports'
 import { blockById, fmtShort, money } from '../../lib/dates'
 import { initialsOf } from '../../lib/db'
+import { SEGMENTS } from '../../lib/pricing'
 
 let seededFor: string | null = null
 
@@ -23,7 +24,7 @@ export default function AthleteHome() {
   useEffect(() => {
     if (user && profile && seededFor !== user.id) {
       seededFor = user.id
-      setRequest({ sport: profile.sport, skill: sportById(profile.sport).skills[0], level: profile.level, suburb: profile.suburb })
+      setRequest({ sport: profile.sport, skill: sportById(profile.sport).skills[0], level: profile.level, suburb: profile.suburb, segment: profile.student ? 'concession' : 'standard' })
     }
   }, [user, profile, setRequest])
 
@@ -182,7 +183,7 @@ export default function AthleteHome() {
                         <Stars rating={c.rating} size={11} reviews={c.reviewCount} /> · {c.suburb}
                       </div>
                     </div>
-                    <span className="text-[13px] font-semibold">{money(c.hourlyRate)}</span>
+                    <span className="text-[13px] font-semibold">{money(SEGMENTS[request.segment].price)}</span>
                     <ChevronRight size={16} className="text-slate-300" />
                   </button>
                 ))}

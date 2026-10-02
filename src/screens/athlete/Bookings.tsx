@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useStore } from '../../state/store'
 import { Avatar, Badge, Button, EmptyState, PageTitle, Segmented, Stars } from '../../components/core'
 import { AthleteTabs } from '../../components/tabs'
-import { PACKAGES, TIERS } from '../../lib/pricing'
+import { SEGMENTS, SLOT_LABEL } from '../../lib/pricing'
 import { blockById, fmtShort, money } from '../../lib/dates'
 
 type View = 'upcoming' | 'requests'
@@ -48,7 +48,6 @@ export default function Bookings() {
               mine.map((b) => {
                 const c = coachById(b.coachId)
                 if (!c) return null
-                const left = b.quote.sessions - b.sessionsUsed
                 return (
                   <div key={b.id} className="card card-hover p-4">
                     <div className="flex items-center gap-3">
@@ -65,8 +64,8 @@ export default function Bookings() {
                         {fmtShort(b.request.date)} · {blockById(b.request.block).hours}
                       </div>
                       <div className="rounded-xl bg-slate-50 px-3 py-2">
-                        <div className="text-[11px] text-slate-400">Package</div>
-                        {left} of {b.quote.sessions} left
+                        <div className="text-[11px] text-slate-400">Price</div>
+                        {b.quote.introDiscount > 0 ? `First session · ${money(b.quote.sessionTotal)}` : `${SEGMENTS[b.quote.segment].label} · ${SLOT_LABEL[b.quote.slot].toLowerCase()}`}
                       </div>
                     </div>
                     <div className="mt-3 flex items-center justify-between text-[11.5px] text-slate-400">
@@ -74,7 +73,7 @@ export default function Bookings() {
                         <MapPin size={12} /> {c.venue}
                       </span>
                       <span>
-                        {b.source === 'offer' ? 'Coach offer' : `${PACKAGES[b.packageType].label} · ${TIERS[b.tier].label}`} · {money(b.quote.total)}
+                        {b.source === 'offer' ? 'Coach offer' : 'Booked in app'} · {money(b.quote.total)} paid
                       </span>
                     </div>
                   </div>

@@ -46,7 +46,7 @@ export default function CoachDashboard() {
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-2.5">
-          <StatCard label="Earnings" value={<AnimatedMoney value={earnings} />} sub="after platform fee" />
+          <StatCard label="Earnings" value={<AnimatedMoney value={earnings} />} sub="$35 a session + peak bonus" />
           <StatCard label="Booked sessions" value={sessions.length} sub={sessions[0] ? `next ${fmtShort(sessions[0].request.date)}` : 'none yet'} />
           <StatCard label="New requests" value={fresh.length} sub={`${sportById(myCoach.sport).name.toLowerCase()} near you`} />
           <StatCard
@@ -105,11 +105,10 @@ export default function CoachDashboard() {
 
       <OfferSheet
         r={target}
-        coach={myCoach}
         onClose={() => setTarget(null)}
-        onSend={(price, message) => {
+        onSend={(message) => {
           if (!target) return
-          sendOffer(target.id, price, message)
+          sendOffer(target.id, message)
           notify(`Offer sent to ${target.athleteName.split(' ')[0]}`)
           setTarget(null)
         }}

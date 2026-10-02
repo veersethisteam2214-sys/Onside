@@ -1,21 +1,23 @@
-import { Check, CalendarDays, BadgeCheck } from 'lucide-react'
+import { Check, CalendarDays, BadgeCheck, Gift, Sparkles } from 'lucide-react'
 import { useState } from 'react'
-import { motion } from 'motion/react'
 import { useStore } from '../../state/store'
 import { Avatar, BottomCTA, Section, TopBar } from '../../components/core'
-import { PACKAGES, TIERS, quote } from '../../lib/pricing'
+import PriceBreakdown from '../../components/PriceBreakdown'
+import { COACH_PAY, INTRO_PRICE, PREMIUM, PREMIUM_PERKS, SEGMENTS, SLOT_LABEL, quote, sessionPrice } from '../../lib/pricing'
 import { blockById, fmtShort, money } from '../../lib/dates'
-import type { PackageType, Tier } from '../../types'
+import type { Segment } from '../../types'
 import { cn } from '@/lib/utils'
 
 export default function Book({ coachId }: { coachId: string }) {
-  const { request: r, draft, setDraft, go, coachById } = useStore()
+  const { request: r, setRequest, draft, setDraft, go, coachById, user, isFirstSession } = useStore()
   const c = coachById(coachId)
-  const [concessionOk, setConcessionOk] = useState(false)
-  if (!c) return null
+  const [studentOk, setStudentOk] = useState(!!user?.athlete?.student)
+  if (!c || !user) return null
 
-  const q = quote(c.hourlyRate, r.date, r.block, draft.tier, draft.packageType)
-  const blocked = draft.tier === 'concession' && !concessionOk
+  const first = isFirstSession(user.id)
+  const addPremium = draft.addPremium && !user.premium
+  const q = quote(r.segment, r.date, r.block, { firstSession: first, addPremium })
+  const blocked = r.segment === 'concession' && !studentOk
 
   return (
     <div className="relative h-full">
@@ -35,78 +37,83 @@ export default function Book({ coachId }: { coachId: string }) {
           </span>
         </div>
 
+        {first && (
+          <div className="mt-4 flex items-center gap-3 rounded-2xl bg-emerald-50 px-4 py-3 ring-1 ring-emerald-100">
+            <Gift size={20} className="shrink-0 text-emerald-600" />
+            <div className="text-[12.5px] leading-snug text-emerald-900">
+              <span className="font-semibold">Your first session is {money(INTRO_PRICE)}.</span> Your coach is still paid in full.
+            </div>
+          </div>
+        )}
+
         <div className="mt-7 space-y-7">
-          <Section label="Choose a package" action={<span className="text-[12px] text-slate-400">More sessions, lower price</span>}>
-            <div className="space-y-2.5">
-              {(Object.keys(PACKAGES) as PackageType[]).map((id) => {
-                const p = PACKAGES[id]
-                const pq = quote(c.hourlyRate, r.date, r.block, draft.tier, id)
-                const on = draft.packageType === id
+          <Section label="Your price" action={<span className="text-[12px] text-slate-400">{SLOT_LABEL[q.slot]} slot</span>}>
+            <div className="grid grid-cols-2 gap-2">
+              {(Object.keys(SEGMENTS) as Segment[]).map((id) => {
+                const on = r.segment === id
+                const p = sessionPrice(id, r.date, r.block)
                 return (
-                  <button key={id} onClick={() => setDraft({ packageType: id })} data-on={on} className="selectable relative w-full rounded-2xl p-4 text-left">
-                    {p.tag && (
-                      <span
-                        className={cn(
-                          'absolute -top-2.5 left-4 rounded-full px-2 py-0.5 text-[10.5px] font-semibold',
-                          id === 'ten' ? 'bg-slate-900 text-white' : 'bg-accent text-white',
-                        )}
-                      >
-                        {p.tag}
-                      </span>
-                    )}
-                    <div className="flex items-center gap-3">
-                      <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition', on ? 'bg-accent' : 'ring-2 ring-slate-300')}>
+                  <button key={id} onClick={() => setRequest({ segment: id })} data-on={on} className="selectable flex flex-col rounded-2xl p-3.5 text-left">
+                    <span className="flex items-center justify-between">
+                      <span className="text-[13.5px] font-semibold">{SEGMENTS[id].label}</span>
+                      <span className={cn('flex h-5 w-5 items-center justify-center rounded-full transition', on ? 'bg-accent' : 'ring-2 ring-slate-300')}>
                         {on && <Check size={12} strokeWidth={3} className="text-white" />}
                       </span>
-                      <div>
-                        <div className="text-[14.5px] font-semibold text-ink">{p.label}</div>
-                        <div className="text-[12px] text-slate-500">
-                          {money(pq.total)} total{pq.saving > 0 && ` · save ${money(pq.saving)}`}
-                        </div>
-                      </div>
-                      <div className="ml-auto text-right">
-                        <div className="text-[20px] font-semibold tracking-tight text-ink">{money(pq.unitPrice)}</div>
-                        <div className="text-[11px] text-slate-400">per session</div>
-                      </div>
-                    </div>
+                    </span>
+                    <span className="mt-1.5 text-[22px] font-semibold tracking-tight text-ink">{money(p)}</span>
+                    <span className="text-[11.5px] leading-snug text-slate-500">{SEGMENTS[id].who}</span>
                   </button>
                 )
               })}
             </div>
-          </Section>
 
-          <Section label="Pricing tier">
-            <div className="grid grid-cols-3 gap-2">
-              {(Object.keys(TIERS) as Tier[]).map((id) => (
-                <button key={id} onClick={() => setDraft({ tier: id })} data-on={draft.tier === id} className="selectable flex flex-col rounded-2xl p-3 text-left">
-                  <span className="text-[13px] font-semibold">{TIERS[id].label}</span>
-                  <span className="mt-1 text-[11px] leading-snug text-slate-500">{TIERS[id].blurb}</span>
-                </button>
-              ))}
-            </div>
-
-            <motion.ul key={draft.tier} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="card space-y-2 p-4">
-              {TIERS[draft.tier].perks.map((perk) => (
-                <li key={perk} className="flex items-center gap-2 text-[13px] text-slate-600">
-                  <Check size={14} className="text-emerald-600" /> {perk}
-                </li>
-              ))}
-            </motion.ul>
-
-            {draft.tier === 'concession' && (
+            {r.segment === 'concession' && (
               <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-amber-50 p-4 text-[12.5px] text-amber-900 ring-1 ring-amber-100">
-                <input type="checkbox" checked={concessionOk} onChange={(e) => setConcessionOk(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#0a66ff]" />
+                <input type="checkbox" checked={studentOk} onChange={(e) => setStudentOk(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#0a66ff]" />
                 <span>
                   <span className="inline-flex items-center gap-1 font-semibold">
-                    <BadgeCheck size={14} /> Verify eligibility (demo)
+                    <BadgeCheck size={14} /> Verify student status (demo)
                   </span>
                   <br />
                   <span className="text-amber-800/80">
-                    The live app checks a concession card or school equity program before booking — which is what stops everyone claiming the discount.
+                    The live app checks a school or university enrolment at sign-up, which stops others claiming the concession price.
                   </span>
                 </span>
               </label>
             )}
+          </Section>
+
+          <Section label="Onside Premium" action={<span className="text-[12px] text-slate-400">Optional · monthly</span>}>
+            {user.premium ? (
+              <div className="card flex items-center gap-3 p-4 text-[13px] text-slate-600">
+                <Sparkles size={18} className="shrink-0 text-accent" /> You’re a Premium member. Your AI training plan updates after this session.
+              </div>
+            ) : (
+              <button onClick={() => setDraft({ addPremium: !draft.addPremium })} data-on={draft.addPremium} className="selectable w-full rounded-2xl p-4 text-left">
+                <div className="flex items-center gap-3">
+                  <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-md transition', draft.addPremium ? 'bg-accent' : 'ring-2 ring-slate-300')}>
+                    {draft.addPremium && <Check size={12} strokeWidth={3} className="text-white" />}
+                  </span>
+                  <span className="text-[14.5px] font-semibold text-ink">Add Premium</span>
+                  <span className="ml-auto text-right">
+                    <span className="text-[18px] font-semibold tracking-tight text-ink">{money(PREMIUM[r.segment])}</span>
+                    <span className="text-[11px] text-slate-400"> / month</span>
+                  </span>
+                </div>
+                <ul className="mt-3 space-y-1.5 pl-8">
+                  {PREMIUM_PERKS.map((perk) => (
+                    <li key={perk} className="flex items-center gap-2 text-[12.5px] text-slate-600">
+                      <Check size={13} className="text-emerald-600" /> {perk}
+                    </li>
+                  ))}
+                  <li className="text-[11.5px] text-slate-400">Sessions stay the same price.</li>
+                </ul>
+              </button>
+            )}
+          </Section>
+
+          <Section label="Price breakdown">
+            <PriceBreakdown q={q} />
           </Section>
         </div>
       </div>
@@ -114,7 +121,17 @@ export default function Book({ coachId }: { coachId: string }) {
       <BottomCTA
         disabled={blocked}
         onClick={() => go({ name: 'checkout', coachId: c.id })}
-        note={q.isPeak ? 'Peak slot · includes 15% weekend / after-school loading' : 'Off-peak slot · no peak loading'}
+        note={
+          first
+            ? `First-session offer · your coach is still paid ${money(COACH_PAY)}`
+            : r.segment === 'concession'
+            ? 'Concession price · never changes with demand'
+            : q.slot === 'peak'
+              ? 'Peak slot · +20%, paid to your coach as a bonus'
+              : q.slot === 'offpeak'
+                ? 'Off-peak slot · 15% off'
+                : 'Standard time · base price'
+        }
       >
         Continue · {money(q.total)}
       </BottomCTA>

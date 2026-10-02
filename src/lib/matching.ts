@@ -1,15 +1,16 @@
 import { COACHES, isFullyVerified } from '../data/coaches'
 import { suburbByName } from '../data/sports'
 import type { Coach, Match, SessionRequest } from '../types'
-import { listPrice } from './pricing'
+import { sessionPrice } from './pricing'
 
 /**
  * Match score — transparent on purpose, so the report can explain it and the app can
- * show *why* a coach ranked where they did.
+ * show *why* a coach ranked where they did. Price is not a factor: Onside sets one price
+ * per segment, so every coach costs the athlete the same and ranking is purely on fit.
  *
- *   score = 0.35 skill + 0.25 availability + 0.20 proximity + 0.10 rating + 0.10 price
+ *   score = 0.40 skill + 0.25 availability + 0.25 proximity + 0.10 rating
  */
-const W = { skill: 0.35, availability: 0.25, proximity: 0.2, rating: 0.1, price: 0.1 }
+const W = { skill: 0.4, availability: 0.25, proximity: 0.25, rating: 0.1 }
 
 const BLOCK_LABEL = { morning: 'morning', afternoon: 'afternoon', evening: 'evening' } as const
 const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -40,17 +41,13 @@ function scoreCoach(coach: Coach, req: SessionRequest): Match | null {
   const proximity = Math.max(0, 1 - distance / 25)
   // unreviewed coaches get a neutral score rather than a perfect 5.0
   const rating = coach.reviewCount ? Math.min(1, Math.max(0, (coach.rating - 3.5) / 1.5)) : 0.5
-  const sessionPrice = listPrice(coach.hourlyRate, req.date, req.block)
-  const price =
-    sessionPrice <= req.budget ? 1 : Math.max(0, 1 - (sessionPrice - req.budget) / req.budget)
   const levelFit = coach.levels.includes(req.level) ? 1 : 0.85
 
   const raw =
     W.skill * skill +
     W.availability * availability +
     W.proximity * proximity +
-    W.rating * rating +
-    W.price * price
+    W.rating * rating
 
   const reasons: string[] = []
   if (skill === 1) reasons.push(`Coaches ${req.skill.toLowerCase()}`)
@@ -62,9 +59,9 @@ function scoreCoach(coach: Coach, req: SessionRequest): Match | null {
     coach,
     score: Math.round(raw * levelFit * 100),
     km: distance,
-    breakdown: { skill, availability, proximity, rating, price },
+    breakdown: { skill, availability, proximity, rating },
     reasons,
-    sessionPrice,
+    sessionPrice: sessionPrice(req.segment, req.date, req.block),
   }
 }
 

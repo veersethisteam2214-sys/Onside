@@ -1,87 +1,85 @@
-import type { PackageType, PriceQuote, TimeBlock, Tier } from '../types'
+import type { PriceQuote, Segment, SlotType, TimeBlock } from '../types'
 
 /**
- * The Onside pricing engine. Every number here should match the report's financials.
+ * The Onside pricing engine. Every number here matches Section 5 of the report
+ * (and the A$20 first-session offer in Section 6.5).
  *
- *   unitPrice   = coachRate × peakMultiplier × tierRate × packageDiscount
- *   platformFee = total × TAKE_RATE
- *   coachPayout = total − platformFee
+ *   athlete pays  = segment price, moved by dynamic pricing (standard only)
+ *   coach is paid = A$35 flat + any peak surge (the surge goes to the coach)
+ *   Onside keeps  = what the athlete pays − what the coach is paid
  */
 
-/** Platform's share of every booking (two-sided platform price structure). */
-export const TAKE_RATE = 0.15
-
-/** Dynamic pricing: weekends and weekday after-school slots are peak (perishable inventory). */
-export const PEAK_MULTIPLIER = 1.15
-
-/** Third-degree price discrimination by verified group; Performance is a product upgrade. */
-export const TIERS: Record<Tier, { label: string; rate: number; blurb: string; perks: string[] }> = {
-  concession: {
-    label: 'Concession',
-    rate: 0.5,
-    blurb: 'Verified concession card or school equity program',
-    perks: ['Same vetted coaches', 'Verification required at booking'],
-  },
-  standard: {
-    label: 'Standard',
-    rate: 1,
-    blurb: 'Most athletes',
-    perks: ['Vetted coach', 'In-app payment & refunds', 'Session notes'],
-  },
-  performance: {
-    label: 'Performance',
-    rate: 1.5,
-    blurb: 'For athletes chasing selection',
-    perks: ['Everything in Standard', 'Slow-motion video analysis', 'Written 4-week progress plan', 'Priority booking'],
-  },
+/** Third-degree price discrimination: student status is the verified proxy for income. */
+export const SEGMENTS: Record<Segment, { label: string; price: number; who: string }> = {
+  concession: { label: 'Concession', price: 40, who: 'School and university students' },
+  standard: { label: 'Standard', price: 60, who: 'All other athletes' },
 }
 
-/** Second-degree price discrimination: bigger bundles, lower per-session price. */
-export const PACKAGES: Record<PackageType, { label: string; sessions: number; discount: number; tag?: string }> = {
-  single: { label: 'Single session', sessions: 1, discount: 1 },
-  five: { label: '5-session pack', sessions: 5, discount: 0.92, tag: 'Save 8%' },
-  ten: { label: '10-session pack', sessions: 10, discount: 0.85, tag: 'Best value · save 15%' },
-}
+/** Flat coach pay, the same in both segments, so coaches don't avoid concession bookings. */
+export const COACH_PAY = 35
 
-export function isPeak(dateISO: string, block: TimeBlock): boolean {
+/** Dynamic pricing applies to standard sessions only; concession prices never surge. */
+export const STANDARD_PEAK = 1.2 // A$72
+export const STANDARD_OFF_PEAK = 0.85 // A$51
+
+/** Introductory price for an athlete's first session; Onside covers the gap to the coach's A$35. */
+export const INTRO_PRICE = 20
+
+/** Onside Premium (second-degree price discrimination): monthly, sessions stay at normal prices. */
+export const PREMIUM: Record<Segment, number> = { concession: 12, standard: 20 }
+export const PREMIUM_PERKS = ['AI training plan built from coach-written drills', 'Progress tracking', 'Priority booking of peak slots']
+
+export const SLOT_LABEL: Record<SlotType, string> = { peak: 'Peak', base: 'Standard time', offpeak: 'Off-peak' }
+
+/**
+ * Weekends and weekday after-school slots are peak; weekday mornings, when coaches sit idle,
+ * are off-peak; weekday evenings are charged at the base price.
+ */
+export function slotType(dateISO: string, block: TimeBlock): SlotType {
   const day = new Date(dateISO + 'T12:00:00').getDay()
-  const weekend = day === 0 || day === 6
-  return weekend || block === 'afternoon'
+  if (day === 0 || day === 6 || block === 'afternoon') return 'peak'
+  return block === 'morning' ? 'offpeak' : 'base'
+}
+
+export const isPeak = (dateISO: string, block: TimeBlock) => slotType(dateISO, block) === 'peak'
+
+/** Session price before any first-session offer. */
+export function sessionPrice(segment: Segment, dateISO: string, block: TimeBlock): number {
+  const base = SEGMENTS[segment].price
+  if (segment === 'concession') return base
+  const slot = slotType(dateISO, block)
+  return Math.round(base * (slot === 'peak' ? STANDARD_PEAK : slot === 'offpeak' ? STANDARD_OFF_PEAK : 1))
 }
 
 export function quote(
-  coachRate: number,
+  segment: Segment,
   dateISO: string,
   block: TimeBlock,
-  tier: Tier,
-  pkg: PackageType,
+  opts: { firstSession?: boolean; addPremium?: boolean } = {},
 ): PriceQuote {
-  const peak = isPeak(dateISO, block)
-  const peakMultiplier = peak ? PEAK_MULTIPLIER : 1
-  const tierRate = TIERS[tier].rate
-  const { sessions, discount } = PACKAGES[pkg]
+  const slot = slotType(dateISO, block)
+  const listPrice = SEGMENTS[segment].price
+  const price = sessionPrice(segment, dateISO, block)
+  const intro = !!opts.firstSession
 
-  const fullUnit = coachRate * peakMultiplier * tierRate
-  const unitPrice = Math.round(fullUnit * discount)
-  const total = unitPrice * sessions
-  const saving = Math.round(fullUnit * sessions) - total
-  const platformFee = Math.round(total * TAKE_RATE)
+  // The intro price carries no surge, so the coach gets the flat A$35 and Onside covers the gap.
+  const peakBonus = intro ? 0 : Math.max(0, price - listPrice)
+  const introDiscount = intro ? price - INTRO_PRICE : 0
+  const sessionTotal = price - introDiscount
+  const coachPayout = COACH_PAY + peakBonus
+  const premiumFee = opts.addPremium ? PREMIUM[segment] : 0
 
   return {
-    baseRate: coachRate,
-    peakMultiplier,
-    isPeak: peak,
-    tierRate,
-    packageDiscount: discount,
-    sessions,
-    unitPrice,
-    total,
-    saving,
-    platformFee,
-    coachPayout: total - platformFee,
+    segment,
+    slot,
+    listPrice,
+    sessionPrice: price,
+    introDiscount,
+    sessionTotal,
+    premiumFee,
+    total: sessionTotal + premiumFee,
+    coachPayout,
+    peakBonus,
+    onsideMargin: sessionTotal - coachPayout,
   }
 }
-
-/** Price an athlete sees in search results: single session, standard tier. */
-export const listPrice = (coachRate: number, dateISO: string, block: TimeBlock) =>
-  quote(coachRate, dateISO, block, 'standard', 'single').unitPrice

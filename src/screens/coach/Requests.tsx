@@ -50,11 +50,10 @@ export default function CoachRequests() {
 
       <OfferSheet
         r={target}
-        coach={myCoach}
         onClose={() => setTarget(null)}
-        onSend={(price, message) => {
+        onSend={(message) => {
           if (!target) return
-          sendOffer(target.id, price, message)
+          sendOffer(target.id, message)
           notify(`Offer sent to ${target.athleteName.split(' ')[0]}`)
           setTarget(null)
         }}

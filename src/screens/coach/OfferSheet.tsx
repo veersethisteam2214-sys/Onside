@@ -1,69 +1,62 @@
 import { useEffect, useState } from 'react'
-import type { Coach, OpenRequest } from '../../types'
+import type { OpenRequest } from '../../types'
 import { Button, Field, Sheet } from '../../components/core'
 import { blockById, fmtShort, money } from '../../lib/dates'
-import { TAKE_RATE, listPrice } from '../../lib/pricing'
+import { COACH_PAY, SEGMENTS, quote } from '../../lib/pricing'
 
-/** Coach composes an offer to an athlete's request: price + a short message. */
+/**
+ * Coach responds to an athlete's request with a short message. The price is not the coach's
+ * to set: Onside charges one price per segment and pays every coach a flat A$35 + peak bonus.
+ */
 export default function OfferSheet({
   r,
-  coach,
   onClose,
   onSend,
 }: {
   r: OpenRequest | null
-  coach: Coach
   onClose: () => void
-  onSend: (price: number, message: string) => void
+  onSend: (message: string) => void
 }) {
-  const [price, setPrice] = useState(0)
   const [message, setMessage] = useState('')
 
   useEffect(() => {
     if (!r) return
-    setPrice(listPrice(coach.hourlyRate, r.date, r.block))
     setMessage(`Hi ${r.athleteName.split(' ')[0]}, I coach ${r.skill.toLowerCase()} and I'm free ${fmtShort(r.date)}. Happy to work on this with you.`)
-  }, [r, coach])
+  }, [r])
 
-  const fee = Math.round(price * TAKE_RATE)
-  const fill = ((price - 40) / (200 - 40)) * 100
+  const q = r ? quote(r.segment, r.date, r.block) : null
 
   return (
     <Sheet open={!!r} onClose={onClose} title={r ? `Offer to ${r.athleteName.split(' ')[0]}` : ''}>
-      {r && (
+      {r && q && (
         <>
           <p className="text-[13px] text-slate-500">
-            {r.skill} · {fmtShort(r.date)} {blockById(r.block).hours} · {r.suburb} · budget {money(r.budget)}
+            {r.skill} · {fmtShort(r.date)} {blockById(r.block).hours} · {r.suburb}
           </p>
 
           <div className="mt-5 space-y-4">
-            <Field label="Your price" hint={price > r.budget ? 'Above their budget' : 'Within budget'}>
-              <div className="card px-4 pt-3 pb-3">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-[26px] font-semibold tracking-tight">{money(price)}</span>
-                  <span className="text-[12px] text-slate-400">
-                    you receive {money(price - fee)} after {Math.round(TAKE_RATE * 100)}% fee
-                  </span>
+            <div className="card grid grid-cols-2 divide-x divide-slate-100 text-center">
+              <div className="px-3 py-3.5">
+                <div className="text-[24px] font-semibold tracking-tight">{money(q.coachPayout)}</div>
+                <div className="text-[11.5px] text-slate-500">
+                  you receive{q.peakBonus > 0 ? ` (${money(COACH_PAY)} + ${money(q.peakBonus)} peak bonus)` : ''}
                 </div>
-                <input
-                  type="range"
-                  min={40}
-                  max={200}
-                  step={5}
-                  value={price}
-                  onChange={(e) => setPrice(Number(e.target.value))}
-                  className="range mt-3 w-full"
-                  style={{ ['--fill' as string]: `${fill}%` }}
-                />
               </div>
-            </Field>
+              <div className="px-3 py-3.5">
+                <div className="text-[24px] font-semibold tracking-tight">{money(q.sessionPrice)}</div>
+                <div className="text-[11.5px] text-slate-500">{SEGMENTS[r.segment].label.toLowerCase()} price athlete pays</div>
+              </div>
+            </div>
+            <p className="text-[11.5px] leading-relaxed text-slate-400">
+              Onside sets the price, so you never have to negotiate. You’re paid the same for student and standard sessions, automatically after each one.
+            </p>
             <Field label="Message">
               <textarea className="field" rows={3} maxLength={240} value={message} onChange={(e) => setMessage(e.target.value)} />
             </Field>
           </div>
 
-          <Button size="lg" full className="mt-5" onClick={() => onSend(price, message.trim())}>
-            Send offer · {money(price)}
+          <Button size="lg" full className="mt-5" onClick={() => onSend(message.trim())}>
+            Send offer
           </Button>
         </>
       )}

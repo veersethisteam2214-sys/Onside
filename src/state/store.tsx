@@ -1,9 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import type { Booking, Coach, DB, OpenRequest, Offer, PackageType, Role, SessionRequest, Tier, User } from '../types'
+import type { Booking, Coach, DB, OpenRequest, Offer, Role, SessionRequest, User } from '../types'
 import { nextSaturday } from '../lib/dates'
 import { COACHES } from '../data/coaches'
 import { DB_KEY, SESSION_KEY, ageFrom, hashPassword, loadDB, loadSession, resetDB, saveDB, saveSession, uid } from '../lib/db'
-import { TAKE_RATE, isPeak } from '../lib/pricing'
+import { quote, sessionPrice } from '../lib/pricing'
 
 export type Screen =
   // auth & onboarding
@@ -29,8 +29,8 @@ export type Screen =
   | { name: 'account' }
 
 export interface Draft {
-  packageType: PackageType
-  tier: Tier
+  /** add Onside Premium (first month charged at checkout) */
+  addPremium: boolean
 }
 
 interface Store {
@@ -58,7 +58,9 @@ interface Store {
   offers: Offer[]
   bookings: Booking[]
   postRequest: (note: string) => OpenRequest | null
-  sendOffer: (requestId: string, price: number, message: string) => void
+  sendOffer: (requestId: string, message: string) => void
+  /** true until the athlete's first booking: that session gets the A$20 intro price */
+  isFirstSession: (athleteId: string) => boolean
   respondOffer: (offerId: string, accept: boolean) => Booking | null
   addBooking: (b: Booking) => void
   resetDemo: () => void
@@ -81,7 +83,7 @@ const DEFAULT_REQUEST: SessionRequest = {
   date: nextSaturday(),
   block: 'morning',
   suburb: 'Burwood',
-  budget: 110,
+  segment: 'concession',
 }
 
 /** Where a signed-in user belongs: onboarding until their profile is complete. */
@@ -102,7 +104,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [stack, setStack] = useState<Screen[]>(() => [homeFor(user)])
   const [direction, setDirection] = useState<1 | -1>(1)
   const [request, setRequestState] = useState<SessionRequest>(DEFAULT_REQUEST)
-  const [draft, setDraftState] = useState<Draft>({ packageType: 'five', tier: 'standard' })
+  const [draft, setDraftState] = useState<Draft>({ addPremium: false })
   const [toast, setToast] = useState<string | null>(null)
   const toastTimer = useRef<number | undefined>(undefined)
 
@@ -213,6 +215,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const addBooking = useCallback((b: Booking) => commit((d) => ({ ...d, bookings: [b, ...d.bookings] })), [commit])
 
+  const isFirstSession = useCallback((athleteId: string) => !db.bookings.some((b) => b.athleteId === athleteId), [db.bookings])
+
   const postRequest = useCallback(
     (note: string) => {
       if (!user) return null
@@ -233,7 +237,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   )
 
   const sendOffer = useCallback(
-    (requestId: string, price: number, message: string) => {
+    (requestId: string, message: string) => {
       if (!user?.coachId) return
       const r = db.requests.find((x) => x.id === requestId)
       if (!r) return
@@ -242,7 +246,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         requestId,
         coachId: user.coachId,
         athleteId: r.athleteId,
-        price,
+        price: sessionPrice(r.segment, r.date, r.block),
         message,
         status: 'pending',
         createdAt: new Date().toISOString(),
@@ -261,31 +265,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         commit((d) => ({ ...d, offers: d.offers.map((o) => (o.id === offerId ? { ...o, status: 'declined' } : o)) }))
         return null
       }
-      // Accepting creates a single standard session at the offered price.
-      const platformFee = Math.round(offer.price * TAKE_RATE)
+      // Accepting books one session at Onside's price for the athlete's segment.
       const booking: Booking = {
         id: uid('bk'),
         coachId: offer.coachId,
         athleteId: r.athleteId,
         athleteName: r.athleteName,
-        request: { sport: r.sport, skill: r.skill, level: r.level, date: r.date, block: r.block, suburb: r.suburb, budget: r.budget },
-        packageType: 'single',
-        tier: 'standard',
-        quote: {
-          baseRate: offer.price,
-          peakMultiplier: 1,
-          isPeak: isPeak(r.date, r.block),
-          tierRate: 1,
-          packageDiscount: 1,
-          sessions: 1,
-          unitPrice: offer.price,
-          total: offer.price,
-          saving: 0,
-          platformFee,
-          coachPayout: offer.price - platformFee,
-        },
+        request: { sport: r.sport, skill: r.skill, level: r.level, date: r.date, block: r.block, suburb: r.suburb, segment: r.segment },
+        quote: quote(r.segment, r.date, r.block, { firstSession: !db.bookings.some((b) => b.athleteId === r.athleteId) }),
         createdAt: new Date().toISOString(),
-        sessionsUsed: 0,
         source: 'offer',
       }
       commit((d) => ({
@@ -298,7 +286,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }))
       return booking
     },
-    [db.offers, db.requests, commit],
+    [db.offers, db.requests, db.bookings, commit],
   )
 
   const resetDemo = useCallback(() => {
@@ -334,6 +322,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       bookings: db.bookings,
       postRequest,
       sendOffer,
+      isFirstSession,
       respondOffer,
       addBooking,
       resetDemo,
@@ -344,7 +333,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       toast,
       notify,
     }),
-    [stack, direction, go, back, reset, goHome, user, signIn, signUp, signOut, updateUser, saveCoachProfile, coaches, coachById, myCoach, db.requests, db.offers, db.bookings, postRequest, sendOffer, respondOffer, addBooking, resetDemo, request, setRequest, draft, setDraft, toast, notify],
+    [stack, direction, go, back, reset, goHome, user, signIn, signUp, signOut, updateUser, saveCoachProfile, coaches, coachById, myCoach, db.requests, db.offers, db.bookings, postRequest, sendOffer, isFirstSession, respondOffer, addBooking, resetDemo, request, setRequest, draft, setDraft, toast, notify],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
