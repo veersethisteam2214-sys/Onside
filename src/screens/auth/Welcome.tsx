@@ -2,7 +2,7 @@ import { motion } from 'motion/react'
 import { CreditCard, ShieldCheck, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '../../state/store'
-import { Button, Logo, SportBadge } from '../../components/core'
+import { Button, SportBadge, Wordmark } from '../../components/core'
 import { SPORTS } from '../../data/sports'
 import { DEMO_ATHLETE_EMAIL, DEMO_COACH_EMAIL, DEMO_PASSWORD } from '../../lib/db'
 
@@ -25,10 +25,7 @@ export default function Welcome() {
   return (
     <div className="flex h-full flex-col overflow-y-auto px-6 pt-16 pb-8">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="flex items-center gap-2.5">
-          <Logo size={40} />
-          <span className="text-[19px] font-semibold tracking-tight">Onside</span>
-        </div>
+        <Wordmark height={34} />
 
         <h1 className="mt-10 text-[36px] font-semibold leading-[1.08] tracking-[-0.035em]">
           The right coach,

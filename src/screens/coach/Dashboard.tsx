@@ -1,7 +1,7 @@
 import { ArrowRight, BadgeCheck, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '../../state/store'
-import { Avatar, Button, EmptyState, Section, StatCard, Stars } from '../../components/core'
+import { Avatar, Button, EmptyState, Section, StatCard, Stars, Wordmark } from '../../components/core'
 import { AnimatedMoney } from '../../components/AnimatedCounter'
 import { CoachTabs } from '../../components/tabs'
 import RequestCard from './RequestCard'
@@ -27,6 +27,7 @@ export default function CoachDashboard() {
   return (
     <div className="relative h-full">
       <div className="h-full overflow-y-auto px-5 pt-14 pb-[120px]">
+        <Wordmark height={22} className="mb-4" />
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[13px] font-medium text-slate-500">Coach dashboard</p>

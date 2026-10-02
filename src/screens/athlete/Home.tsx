@@ -2,7 +2,7 @@ import { ArrowRight, CalendarDays, ChevronRight, MapPin } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useEffect } from 'react'
 import { useStore } from '../../state/store'
-import { Avatar, Button, Section, SportBadge, Stars, sportPhotoUrl } from '../../components/core'
+import { Avatar, Button, Section, SportBadge, Stars, Wordmark, sportPhotoUrl } from '../../components/core'
 import { AthleteTabs } from '../../components/tabs'
 import { SPORTS, sportById } from '../../data/sports'
 import { blockById, fmtShort, money } from '../../lib/dates'
@@ -44,6 +44,7 @@ export default function AthleteHome() {
   return (
     <div className="relative h-full">
       <div className="h-full overflow-y-auto px-5 pt-14 pb-[120px]">
+        <Wordmark height={22} className="mb-4" />
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[13px] font-medium text-slate-500">{greeting()}</p>

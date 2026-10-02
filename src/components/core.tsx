@@ -17,22 +17,22 @@ import type { SportId, Verifications } from '../types'
 
 // ─── Brand ──────────────────────────────────────────────────────────────
 
+/** The whistle "O" on its own — for small, square spots. */
 export function Logo({ size = 40 }: { size?: number }) {
+  return <img src="/brand/onside-mark.png" alt="Onside" width={size} height={size} className="shrink-0 select-none" draggable={false} />
+}
+
+/** Full "Onside" wordmark (navy "On", grey "side"). Source image is 974 × 258. */
+export function Wordmark({ height = 28, className }: { height?: number; className?: string }) {
   return (
-    <div
-      className="flex shrink-0 items-center justify-center"
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size * 0.3,
-        background: 'linear-gradient(160deg, #2a7dff 0%, #0a66ff 45%, #0648c4 100%)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 8px 18px -8px rgba(10,102,255,0.7)',
-      }}
-    >
-      <svg width={size * 0.46} height={size * 0.46} viewBox="0 0 24 24" fill="none">
-        <path d="M9 5l7 7-7 7" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
+    <img
+      src="/brand/onside-wordmark.png"
+      alt="Onside"
+      height={height}
+      width={Math.round((height * 974) / 258)}
+      className={cn('shrink-0 select-none', className)}
+      draggable={false}
+    />
   )
 }
 
